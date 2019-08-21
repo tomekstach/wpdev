@@ -110,22 +110,6 @@ if ( $query->have_posts() )
 	<div class="row page-wrapper">
 		<article id="post-<?php the_ID(); ?>" <?php post_class( VamtamTemplates::get_layout() ); ?>>
 			<div class="page-content clearfix">
-				Found <?php echo $query->found_posts; ?> Results<br />
-				Page <?php echo $query->query['paged']; ?> of <?php echo $query->max_num_pages; ?><br />
-
-				<div class="pagination">
-
-					<div class="nav-previous"><?php next_posts_link( 'Older posts', $query->max_num_pages ); ?></div>
-					<div class="nav-next"><?php previous_posts_link( 'Newer posts' ); ?></div>
-					<?php
-						/* example code for using the wp_pagenavi plugin */
-						if (function_exists('wp_pagenavi'))
-						{
-							echo "<br />";
-							wp_pagenavi( array( 'query' => $query ) );
-						}
-					?>
-				</div>
 				<div class="pp-dealers-wrapper">
 	<?php
 	while ($query->have_posts())
@@ -148,14 +132,14 @@ if ( $query->have_posts() )
 		} else {
 			if ( $blog_query->is_single( $post ) ) {
 				VamtamPostFormats::block_gallery_beaver();
-				$post_data['content'] = apply_filters( 'the_content', get_the_content() );
+				$post_data['content'] = do_shortcode(apply_filters( 'the_content', get_the_content() ));
 				VamtamPostFormats::enable_gallery_beaver();
 			} elseif ( $show_content && ! $news ) {
 				VamtamPostFormats::block_gallery_beaver();
-				$post_data['content'] = apply_filters( 'the_content', get_the_content( esc_html__( 'Read more', 'morz' ), false ) );
+				$post_data['content'] = do_shortcode(apply_filters( 'the_content', get_the_content( esc_html__( 'Read more', 'morz' ), false ) ));
 				VamtamPostFormats::enable_gallery_beaver();
 			} else {
-				$post_data['content'] = get_the_excerpt();
+				$post_data['content'] = do_shortcode(get_the_excerpt());
 			}
 		}
 
@@ -169,9 +153,11 @@ if ( $query->have_posts() )
 			$article_class[] = 'single';
 		}
 
-		$inner_class   = array( $format . '-post-format', 'clearfix' );
-		$inner_class[] = isset( $post_data['act_as_image'] ) ? 'as-image' : 'as-normal';
-		$inner_class[] = isset( $post_data['act_as_standard'] ) ? 'as-standard-post-format' : ''
+		$inner_class	= array( $format . '-post-format', 'clearfix' );
+		$inner_class[]	= isset( $post_data['act_as_image'] ) ? 'as-image' : 'as-normal';
+		$inner_class[]	= isset( $post_data['act_as_standard'] ) ? 'as-standard-post-format' : '';
+		$post_tags		= get_the_tags();
+		$class			= get_post_class();
 		?>
 			<div <?php post_class( implode( ' ', $post_class ) ) ?>>
 				<div>
@@ -189,9 +175,19 @@ if ( $query->have_posts() )
 												<?php echo $post_data['media']; // xss ok ?>
 											<?php endif ?>
 										</div>
+										<?php if (is_object($post_tags[0])) :?>
+											<div class="post-tag"><?php echo $post_tags[0]->name;?></div>
+										<?php endif ?>
 									</div>
 								<?php endif; ?>
 								<div class="post-content-outer">
+									<?php if (is_object($post_tags[0]) and (in_array('category-menedzer-radzi', $class) or in_array('category-faq', $class))) :?>
+									<div class="tags">
+										<?php foreach ($post_tags as $tag) :?>
+										<div class="post-tag"><?php echo $post_tags[0]->name;?></div>
+										<?php endforeach;?>
+									</div>
+									<?php endif; ?>
 									<?php
 										include locate_template( 'templates/post/header.php' );
 										include locate_template( 'templates/post/content.php' );
@@ -200,7 +196,7 @@ if ( $query->have_posts() )
 
 								<div class="pp-content-grid-more-link clearfix">
 									<a href="<?php the_permalink() ?>" title="<?php the_title_attribute()?>" target="_self" class="pp-content-grid-more pp-more-link-button" role="button">
-										<?php esc_html_e( 'Read More', 'morz' ) ?>
+										<span><?php esc_html_e( 'Read More', 'morz' ) ?></span>
 									</a>
 								</div>
 							</div>
@@ -212,12 +208,8 @@ if ( $query->have_posts() )
 	}
 	?>
 </div>
-			Page <?php echo $query->query['paged']; ?> of <?php echo $query->max_num_pages; ?><br />
 
 			<div class="pagination">
-
-				<div class="nav-previous"><?php next_posts_link( 'Older posts', $query->max_num_pages ); ?></div>
-				<div class="nav-next"><?php previous_posts_link( 'Newer posts' ); ?></div>
 				<?php
 					/* example code for using the wp_pagenavi plugin */
 					if (function_exists('wp_pagenavi'))
@@ -231,7 +223,7 @@ if ( $query->have_posts() )
 }
 else
 {
-	echo "No Results Found";
+	echo "Brak wynikow wyszukiwania.";
 }
 ?>
 		</div>
