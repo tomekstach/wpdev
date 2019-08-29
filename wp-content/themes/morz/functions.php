@@ -236,7 +236,11 @@ function excerpt_dl_shortcode() {
 					['title' => 'autoryzowany serwis', 'url' => '/wp-content/uploads/2019/08/AS-1.png'],
 					['title' => 'złoty partner', 'url' => '/wp-content/uploads/2019/08/PZ-1.png'],
 					['title' => 'srebrny partner', 'url' => '/wp-content/uploads/2019/08/PS-1.png'],
-					['title' => 'brązowy partner', 'url' => '/wp-content/uploads/2019/08/PB-1.png']];
+					['title' => 'brązowy partner', 'url' => '/wp-content/uploads/2019/08/PB-1.png'],
+					['title' => 'punkt sprzedaży', 'url' => '/wp-content/uploads/2019/08/POS-1.png'],
+					['title' => 'złoty dealer', 'url' => '/wp-content/uploads/2019/08/DZ-1.png'],
+					['title' => 'srebrny dealer', 'url' => '/wp-content/uploads/2019/08/DS-1.png'],
+					['title' => 'brązowy dealer', 'url' => '/wp-content/uploads/2019/08/DB-1.png']];
 
 	$content	= '[acf field="dl_adres"]<br/>
 	[acf field="dl_kod_pocztowy"] [acf field="dl_miasto"]<br/>
@@ -374,7 +378,11 @@ function badges_dl_shortcode() {
 					['title' => 'autoryzowany serwis', 'url' => '/wp-content/uploads/2019/08/AS-1.png'],
 					['title' => 'złoty partner', 'url' => '/wp-content/uploads/2019/08/PZ-1.png'],
 					['title' => 'srebrny partner', 'url' => '/wp-content/uploads/2019/08/PS-1.png'],
-					['title' => 'brązowy partner', 'url' => '/wp-content/uploads/2019/08/PB-1.png']];
+					['title' => 'brązowy partner', 'url' => '/wp-content/uploads/2019/08/PB-1.png'],
+					['title' => 'punkt sprzedaży', 'url' => '/wp-content/uploads/2019/08/POS-1.png'],
+					['title' => 'złoty dealer', 'url' => '/wp-content/uploads/2019/08/DZ-1.png'],
+					['title' => 'srebrny dealer', 'url' => '/wp-content/uploads/2019/08/DS-1.png'],
+					['title' => 'brązowy dealer', 'url' => '/wp-content/uploads/2019/08/DB-1.png']];
 	$html		= '';
 
 	$etykiety	= explode(', ', do_shortcode('[acf field="dl_etykieta"]'));
