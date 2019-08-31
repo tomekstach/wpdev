@@ -396,3 +396,37 @@ function badges_dl_shortcode() {
 	return $html;
 }
 add_shortcode('badges_dl','badges_dl_shortcode');
+
+add_filter( 'wpcf7_validate_number*', 'custom_online_number_validation_filter', 20, 2 );
+ 
+function custom_online_number_validation_filter( $result, $tag ) {
+	$tags = ['number-mag', 'number-mag-biznes', 'number-fakir', 'number-kaper', 'number-gang', 'number-best',
+			'number-aukcje', 'number-analizy', 'number-mobile', 'number-jpk-biznes', 'number-jpk'];
+	if ( in_array($tag->name, $tags) ) {
+		$sum = 0;
+
+		foreach ($tags as $item) {
+			$sum += intval($_POST[$item]);
+		}
+ 
+        if ( $sum <= 0 ) {
+            $result->invalidate( $tag, "Proszę wybrać conajmniej jeden program!" );
+		}
+
+		if (!isset($_POST['posiada-online']) and intval($_POST['number-jpk-biznes']) > 0 and intval($_POST['number-mag']) == 0 and 
+			intval($_POST['number-fakir']) == 0 and intval($_POST['number-kaper']) == 0) {
+			$result->invalidate( $tag, "Jeżeli wybrałeś WAPRO JPK musisz zaznaczyć WAPRO Mag, WAPRO Fakir lub WAPRO Kaper." );
+		}
+
+		if (!isset($_POST['posiada-online']) and intval($_POST['number-jpk']) > 0 and intval($_POST['number-mag']) == 0 and 
+			intval($_POST['number-fakir']) == 0 and intval($_POST['number-kaper']) == 0) {
+			$result->invalidate( $tag, "Jeżeli wybrałeś WAPRO JPK Biuro musisz zaznaczyć WAPRO Mag, WAPRO Fakir lub WAPRO Kaper." );
+		}
+
+		if (intval($_POST['number-jpk']) > 0 and intval($_POST['number-jpk-biznes']) > 0) {
+			$result->invalidate( $tag, "Jeżeli zaznaczyłeś WAPRO JPK Biznes to nie możesz zaznaczyć WAPRO JPK Biuro." );
+		}
+    }
+ 
+    return $result;
+}
