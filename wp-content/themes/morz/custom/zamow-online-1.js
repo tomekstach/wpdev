@@ -36,11 +36,11 @@ jQuery(document).ready(function($) {
         $('.program-number-biznes').each(function() {
             if (parseInt($(this).val()) > 0) sum2 = sum2 + parseInt($(this).val());
         });
-        if (parseInt($('.program-number-special').val()) > 0 && !$('.jpk-free input:checkbox').prop('checked')) sum1 = sum1 + parseInt($('.program-number-special').val());
 
         sum = (sum1 * 159) + (sum2 * 129);
 
         $('#sum-netto').html(currencyFormatPL(sum));
+        $('#abonament').val(sum);
         $('#sum-brutto').html(currencyFormatPL(sum * 1.23));
     }
 });

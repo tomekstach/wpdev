@@ -415,18 +415,79 @@ function custom_online_number_validation_filter( $result, $tag ) {
 
 		if (!isset($_POST['posiada-online']) and intval($_POST['number-jpk-biznes']) > 0 and intval($_POST['number-mag']) == 0 and 
 			intval($_POST['number-fakir']) == 0 and intval($_POST['number-kaper']) == 0) {
-			$result->invalidate( $tag, "Jeżeli wybrałeś WAPRO JPK musisz zaznaczyć WAPRO Mag, WAPRO Fakir lub WAPRO Kaper." );
+			$result->invalidate( $tag, "Jeżeli wybrałeś WAPRO JPK musisz zaznaczyć WAPRO Mag, WAPRO Fakir lub WAPRO Kaper bądź zaznaczyć Mam już WAPRO Online jeżeli posiadasz wykupiona usługę." );
 		}
 
 		if (!isset($_POST['posiada-online']) and intval($_POST['number-jpk']) > 0 and intval($_POST['number-mag']) == 0 and 
 			intval($_POST['number-fakir']) == 0 and intval($_POST['number-kaper']) == 0) {
-			$result->invalidate( $tag, "Jeżeli wybrałeś WAPRO JPK Biuro musisz zaznaczyć WAPRO Mag, WAPRO Fakir lub WAPRO Kaper." );
+			$result->invalidate( $tag, "Jeżeli wybrałeś WAPRO JPK Biuro musisz zaznaczyć WAPRO Mag, WAPRO Fakir lub WAPRO Kaper bądź zaznaczyć Mam już WAPRO Online jeżeli posiadasz wykupiona usługę." );
 		}
 
 		if (intval($_POST['number-jpk']) > 0 and intval($_POST['number-jpk-biznes']) > 0) {
 			$result->invalidate( $tag, "Jeżeli zaznaczyłeś WAPRO JPK Biznes to nie możesz zaznaczyć WAPRO JPK Biuro." );
 		}
+
+		if (intval($_POST['number-mag']) > 0 and intval($_POST['number-mag-biznes']) > 0) {
+			$result->invalidate( $tag, "Jeżeli zaznaczyłeś WAPRO Mag Biznes to nie możesz zaznaczyć WAPRO Mag." );
+		}
     }
  
     return $result;
+}
+
+add_filter( 'wpcf7_validate_acceptance', 'custom_online_acceptance_validation_filter', 20, 2 );
+ 
+function custom_online_acceptance_validation_filter( $result, $tag ) {
+	if ($tag->name == 'zgoda-rodo') {
+		if (!isset($_POST['zgoda-rodo'])) {
+			$result->invalidate( $tag, "Wyrażenie zgody jest wymagane." );
+		}
+	}
+
+	return $result;
+}
+
+add_filter( 'wpcf7_validate_select*', 'custom_archive_select_validation_filter', 20, 2 );
+
+function custom_archive_select_validation_filter( $result, $tag ) {
+	$programy = [['name' => 'program_version_aukcje', 'title' => 'WAPRO Aukcje'],
+				['name' => 'program_version_analizy', 'title' => 'WAPRO Analizy'],
+				['name' => 'program_version_best', 'title' => 'WAPRO Best'],
+				['name' => 'program_version_fakir', 'title' => 'WAPRO Fakir'],
+				['name' => 'program_version_fakturka', 'title' => 'WAPRO Fakturka'],
+				['name' => 'program_version_gang', 'title' => 'WAPRO Gang'],
+				['name' => 'program_version_jpk', 'title' => 'WAPRO JPK'],
+				['name' => 'program_version_kaper', 'title' => 'WAPRO kaper'],
+				['name' => 'program_version_mag', 'title' => 'WAPRO mag'],
+				['name' => 'program_version_mobile', 'title' => 'WAPRO Mobile'],
+				['name' => 'program_version_mobile_android', 'title' => 'WAPRO Mobile Android'],
+				['name' => 'program_version_wf_kaper_dos', 'title' => 'WF-KaPeR DOS'],
+				['name' => 'program_version_wf_mag_dos', 'title' => 'WF-MAG DOS'],
+				['name' => 'program_version_wf_fakir_dos', 'title' => 'WF-FaKir DOS']];
+
+	foreach ($programy as $key => $value) {
+		if ( $tag->name == $value['name'] and $_POST['program'] == $value['title'] ) {
+			if ( $_POST[$tag->name] == 'wybierz numer wersji' ) {
+				$result->invalidate( $tag, "Proszę wybrać wersję programu!" );
+			}
+		}
+	}
+
+	return $result;
+}
+
+add_action("wpcf7_posted_data", "wpcf7_modify_this");
+
+function wpcf7_modify_this($posted_data) {
+
+	if (array_key_exists('posiada-online', $posted_data)) {
+		if ($posted_data['posiada-online'][0] == "") {
+			$posted_data['posiada-online'][0] = "Nie";
+		}
+		else {
+			$posted_data['posiada-online'][0] = "Tak";
+		}
+	}
+
+    return $posted_data;
 }
