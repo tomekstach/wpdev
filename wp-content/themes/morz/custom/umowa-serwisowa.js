@@ -1,20 +1,21 @@
-jQuery(document).ready(function($){
+jQuery(document).ready(function($) {
 
   $('#get-nip-1').click(function(e) {
     if (!ValidateNip($('#input-nip').val())) {
-      if(!$('.numbernip .wpcf7-not-valid-tip').length) {
+      if (!$('.numbernip .wpcf7-not-valid-tip').length) {
         $('.numbernip').append('<span role="alert" class="wpcf7-not-valid-tip">NIP jest niepoprawny!</span>');
       }
       return false;
-    }
-    else {
+    } else {
       $('.numbernip .wpcf7-not-valid-tip').remove();
     }
 
     $.ajax({
-      url: 'https://www.wapro.pl/oferta/nip/check.php',
+      url: 'https://wpdev.wapro.pl/wp-content/themes/morz/custom/checknip.php',
       type: "GET",
-      data: { nip: $('#input-nip').val() }
+      data: {
+        nip: $('#input-nip').val()
+      }
     }).done(function(string) {
       var obj = JSON.parse(string);
       if (obj.code == 200) {
@@ -22,9 +23,8 @@ jQuery(document).ready(function($){
         //$('#formfield_327').val(obj.content.city);
         $('.number-nip .wpcf7-not-valid-tip').remove();
         $('.textfirma .wpcf7-not-valid-tip').remove();
-      }
-      else {
-        if(!$('.number-nip .wpcf7-not-valid-tip').length) {
+      } else {
+        if (!$('.number-nip .wpcf7-not-valid-tip').length) {
           $('.number-nip').append('<span role="alert" class="wpcf7-not-valid-tip">' + obj.content + '</span>');
         }
       }
@@ -33,7 +33,7 @@ jQuery(document).ready(function($){
 });
 
 function ValidateNip(nip) {
-  if(typeof nip !== 'string')
+  if (typeof nip !== 'string')
     return false;
 
   nip = nip.replace(/[\ \-]/gi, '');
