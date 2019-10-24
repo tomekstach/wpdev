@@ -36,8 +36,30 @@ if (!$account) {
 
   if ($all) {
     $data = new \stdClass;
-    $data->name = $all->name;
-    $data->city = $all->city;
+    $data->name     = $all->name;
+    $data->address  = $all->street;
+
+    if (empty($data->address)) {
+      $data->address = $all->city;
+    }
+
+    $data->address .= ' ' . $all->streetNumber;
+
+    if (!empty($all->houseNumber)) {
+      $data->address .= '/' . $all->houseNumber;
+    }
+
+    $data->city       = $all->postCity;
+    if ($all->postCode) {
+      $data->postCode   = substr($all->postCode, 0, 2).'-'.substr($all->postCode, -3);
+    }
+    else {
+      $data->postCode = '';
+    }
+    $data->firstname  = $all->firstname;
+    $data->lastname   = $all->lastname;
+    $data->state      = $all->state;
+
     $json->code = 200;
     $json->content = $data;
   } else {
@@ -45,6 +67,14 @@ if (!$account) {
     $json->content = $nip24->getLastError();
   }
 }
+
+$url    = 'https://mcl.assecobs.pl/ERP_Service/services_integration_api/ApiWebService.ashx?wsdl&dbc=ABS_TEST';
+//$url    = 'https://mcl.assecobs.pl/ERP_Service_Prod/services_integration_api/ApiWebService.ashx?wsdl&dbc=ABS_PROD';
+
+$client = new SoapClient($url, array("trace" => 1, "exception" => 0));
+
+$params   = array('ArrayDPAgreementGetData' => array('DPAgreementGetData' => array('NIPSameCyfry' => $nip)));
+$json->DPAgreementGetData = $client->DPAgreementGet($params);
 
 $out = html_entity_decode(stripslashes(json_encode($json, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)));
 

@@ -1,0 +1,29 @@
+.dl-obszar-dzialania .wpcf7-list-item {
+  width: 22%;
+  float: left;
+}
+
+.dl-produkty-sprzedaz .wpcf7-list-item,
+.dl-produkty-wdrozenie .wpcf7-list-item,
+.dl-produkty-serwis .wpcf7-list-item,
+.dl-produkty-szkolenie .wpcf7-list-item,
+.dl-produkty-posiadanie .wpcf7-list-item {
+  width: 18%;
+  float: left;
+}
+
+.nip-container {
+  margin-bottom: 35px;
+}
+
+@media screen and (max-width: 992px) {
+  .dl-obszar-dzialania .wpcf7-list-item,
+  .dl-produkty-sprzedaz .wpcf7-list-item,
+  .dl-produkty-wdrozenie .wpcf7-list-item,
+  .dl-produkty-serwis .wpcf7-list-item,
+  .dl-produkty-szkolenie .wpcf7-list-item,
+  .dl-produkty-posiadanie .wpcf7-list-item {
+    width: 100%;
+    float: none;
+  }
+}

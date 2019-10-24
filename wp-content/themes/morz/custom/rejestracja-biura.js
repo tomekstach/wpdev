@@ -1,11 +1,5 @@
 jQuery(document).ready(function($) {
 
-  $('.multistep-cf7-next').click(function(e) {
-    if ($('#rodo-e-mail').val() == '' && $('#zgoda-rodo').prop("checked") == true) {
-      $('#rodo-e-mail').val($('#input-firma-email').val());
-    }
-  });
-
   $('#get-nip-1').click(function(e) {
     if (!ValidateNip($('#input-nip').val())) {
       if (!$('.numbernip .wpcf7-not-valid-tip').length) {
@@ -17,7 +11,7 @@ jQuery(document).ready(function($) {
     }
 
     $.ajax({
-      url: 'https://wpdev.wapro.pl/nip/checknip.php',
+      url: 'https://biura.wpdev.wapro.pl/nip/checknip.php',
       type: "GET",
       data: {
         nip: $('#input-nip').val()
@@ -25,44 +19,23 @@ jQuery(document).ready(function($) {
     }).done(function(string) {
       var obj = JSON.parse(string);
       if (obj.code == 200) {
-        console.log(obj.content.DPAgreementGetData);
-
         $('#input-nazwa-firmy').val(obj.content.name);
-        $('#input-firma-miasto').val(obj.content.city);
-        $('#input-firma-kod-pocztowy').val(obj.content.postCode);
-        $('#input-firma-ulica').val(obj.content.address);
-        $('#input-firma-imie').val(obj.content.firstname);
-        $('#input-firma-nazwisko').val(obj.content.lastname);
-        $('.NIP .wpcf7-not-valid-tip').remove();
-        $('.firma .wpcf7-not-valid-tip').remove();
-        $('.firma-miasto .wpcf7-not-valid-tip').remove();
-        $('.firma-kod-pocztowy .wpcf7-not-valid-tip').remove();
-        $('.firma-ulica .wpcf7-not-valid-tip').remove();
-        $('.firma-imie .wpcf7-not-valid-tip').remove();
-        $('.firma-nazwisko .wpcf7-not-valid-tip').remove();
-        if (obj.DPAgreementGetData.ArrayDPAgreementGetResult.Status == 1) {
-          //alert("RODO!!!");
-          //$('#data-umowy').val('ustawić datę z ERP-a');
-          //$('#rodo-rodzaj').val('ustawić rodzaj umowcowania z ERP-a');
-          $('#zgoda-rodo').prop('checked', true);
-          $('#rodo-name').val($('#input-firma-imie').val() + ' ' + $('#input-firma-nazwisko').val());
-        }
+        $('#input-miasto').val(obj.content.city);
+        $('#input-adres').val(obj.content.address);
+        $('#input-kod-pocztowy').val(obj.content.postCode);
+        $('#select-wojewodztwo option[value="' + obj.content.state.toLowerCase() + '"]').prop('selected', true);
+        $('.your-nip-register .wpcf7-not-valid-tip').remove();
+        $('.your-company .wpcf7-not-valid-tip').remove();
+        $('.your-adres .wpcf7-not-valid-tip').remove();
+        $('.your-code .wpcf7-not-valid-tip').remove();
+        $('.your-city .wpcf7-not-valid-tip').remove();
+        $('.wojewodztwo .wpcf7-not-valid-tip').remove();
       } else {
-        if (!$('.NIP .wpcf7-not-valid-tip').length) {
-          $('.NIP').append('<span role="alert" class="wpcf7-not-valid-tip">' + obj.content + '</span>');
+        if (!$('.number-nip .wpcf7-not-valid-tip').length) {
+          $('.number-nip').append('<span role="alert" class="wpcf7-not-valid-tip">' + obj.content + '</span>');
         }
       }
     });
-  });
-
-  $('#dane-takie-same input').click(function(e) {
-
-    if ($('#dane-takie-same input').prop('checked')) {
-      $('#input-kontakt-imie').val($('#input-firma-imie').val());
-      $('#input-kontakt-nazwisko').val($('#input-firma-nazwisko').val());
-      $('#input-kontakt-telefon').val($('#input-firma-telefon').val());
-      $('#input-kontakt-email').val($('#input-firma-email').val());
-    }
   });
 });
 

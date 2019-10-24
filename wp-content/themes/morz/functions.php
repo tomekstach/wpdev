@@ -554,7 +554,7 @@ add_filter('wpcf7_validate_text*', 'custom_archive_text_validation_filter', 20, 
 
 function custom_archive_text_validation_filter($result, $tag)
 {
-  if ($tag->name == 'your-nip-register') {
+  if ($tag->name == 'your-nip-register' or $tag->name == 'NIP') {
     require_once 'custom/NIP24/NIP24Client.php';
 
     \NIP24\NIP24Client::registerAutoloader();
@@ -562,7 +562,11 @@ function custom_archive_text_validation_filter($result, $tag)
     $nip24 = new \NIP24\NIP24Client('wRocgSXQIItj', '2PEXnwYwCwVA');
 
     //$nip = '7171642051';
-    $nip = preg_replace('/\s+/', '', str_replace('-', '', strip_tags($_POST['your-nip-register'])));
+    if ($tag->name == 'your-nip-register') {
+      $nip = preg_replace('/\s+/', '', str_replace('-', '', strip_tags($_POST['your-nip-register'])));
+    } else {
+      $nip = preg_replace('/\s+/', '', str_replace('-', '', strip_tags($_POST['NIP'])));
+    }
     $nip_eu = 'PL' . $nip;
 
     // Sprawdzenie stanu konta
@@ -577,20 +581,20 @@ function custom_archive_text_validation_filter($result, $tag)
       if (!$all) {
         $result->invalidate($tag, $nip24->getLastError());
       }
-
-      //print_r($all);
     }
 
-    $result->invalidate($tag, 'Test');
-    $url    = 'https://mcl.assecobs.pl/ERP_Service/services_integration_api/ApiWebService.ashx?wsdl&dbc=ABS_TEST';
+    /*$url    = 'https://mcl.assecobs.pl/ERP_Service/services_integration_api/ApiWebService.ashx?wsdl&dbc=ABS_TEST';
     //$url    = 'https://mcl.assecobs.pl/ERP_Service_Prod/services_integration_api/ApiWebService.ashx?wsdl&dbc=ABS_PROD';
 
     $client = new SoapClient($url, array("trace" => 1, "exception" => 0));
 
-    $params   = array('ArrayCustomerGetData' => array('CustomerGetData' => array('NIPSameCyfry' => $_POST['your-nip-register'])));
-    $response = $client->CUSTOMERGET($params);
+    //$params   = array('ArrayCustomerGetData' => array('CustomerGetData' => array('NIPSameCyfry' => $nip)));
+    //$response = $client->CUSTOMERGET($params);
 
-    print_r($response);
+    $params   = array('ArrayDPAgreementGetData' => array('DPAgreementGetData' => array('NIPSameCyfry' => $nip)));
+    $response = $client->DPAgreementGet($params);
+
+    print_r($response);*/
 
     //if (email_exists($_POST['your-nip-register'])) {
     //$result->invalidate($tag, "Uzytkownik o podanym NIP-ie juz istnieje w systemie.");
@@ -656,16 +660,18 @@ function after_sent_mail($cf7)
     if ($data['_wpcf7'] == '45267') {
       // Adding user
       $user_id = username_exists($data['your-login-admin']);
-      // TODO: Check if ERP has this user (by the NIP)
 
       if (!$user_id and email_exists($data['email-admin']) == false) {
-        //$user_id = wp_create_user($data['your-login-admin'], $data['password'], $data['email-admin']);
+        if (strlen($data['password']) < 8) {
+          $data['password'] = randomPassword();
+        }
+        $user_id = wp_create_user($data['your-login-admin'], $data['password'], $data['email-admin']);
       }
 
       // TODO: Modify user data (NIP, etc.)
 
       // Adding dealer localization
-      // TODO: Add Post with dealer localization
+      // Add Post with dealer localization
       $post_id = 45129;
       $post = get_post($post_id);
 
@@ -699,9 +705,8 @@ function after_sent_mail($cf7)
         $post_meta_infos = $wpdb->get_results("SELECT meta_key, meta_value FROM $wpdb->postmeta WHERE post_id=$post_id");
 
         if (count($post_meta_infos) != 0) {
-          //$sql_query = "INSERT INTO $wpdb->postmeta (post_id, meta_key, meta_value) ";
+          $sql_query = "INSERT INTO $wpdb->postmeta (post_id, meta_key, meta_value) ";
           foreach ($post_meta_infos as $meta_info) {
-            $sql_query = "INSERT INTO $wpdb->postmeta (post_id, meta_key, meta_value) ";
             $meta_key = $meta_info->meta_key;
             if ($meta_key == '_wp_old_slug') continue;
             if ($meta_key == 'dl_adres') {
@@ -768,12 +773,11 @@ function after_sent_mail($cf7)
             } else {
               $meta_value = addslashes($meta_info->meta_value);
             }
-            //$sql_query_sel[] = "SELECT $new_post_id, '$meta_key', '$meta_value'";
-            $sql_query .= " VALUES ($new_post_id, '$meta_key', '$meta_value');";
+            $sql_query_sel[] = "SELECT $new_post_id, '$meta_key', '$meta_value'";
             $wpdb->query($sql_query);
           }
-          //$sql_query .= implode(" UNION ALL ", $sql_query_sel);
-          //$wpdb->query($sql_query);
+          $sql_query .= implode(" UNION ALL ", $sql_query_sel);
+          $wpdb->query($sql_query);
         }
       }
 
@@ -781,4 +785,16 @@ function after_sent_mail($cf7)
       // TODO: Use webservices to send data to ERP
     }
   }
+}
+
+function randomPassword()
+{
+  $alphabet = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890#$%^&*!?<>';
+  $pass = array();
+  $alphaLength = strlen($alphabet) - 1;
+  for ($i = 0; $i < 8; $i++) {
+    $n = rand(0, $alphaLength);
+    $pass[] = $alphabet[$n];
+  }
+  return implode($pass);
 }
