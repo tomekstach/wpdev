@@ -623,19 +623,23 @@ function custom_archive_email_validation_filter($result, $tag)
   return $result;
 }
 
-/*add_filter('wpcf7_validate_checkbox*', 'custom_archive_checkbox_validation_filter', 20, 2);
+add_filter('wpcf7_validate_checkbox', 'custom_archive_checkbox_validation_filter', 20, 2);
 
 function custom_archive_checkbox_validation_filter($result, $tag)
 {
-  if ($tag->name == 'dl-obszar-dzialania') {
-    $result->invalidate($tag, "Test!!!");
-    //if (email_exists($_POST['email-admin'])) {
-    //$result->invalidate($tag, "Uzytkownik o podanym adresie email juz istnieje w systemie.");
-    //}
+  if ($tag->name == 'dl-produkty-szkolenie') {
+    if (
+      !isset($_POST['dl-produkty-sprzedaz']) &&
+      !isset($_POST['dl-produkty-wdrozenie']) &&
+      !isset($_POST['dl-produkty-serwis']) &&
+      !isset($_POST['dl-produkty-szkolenie'])
+    ) {
+      $result->invalidate($tag, 'Proszę wybrać przynajmniej jedną opcję!');
+    }
   }
 
   return $result;
-}*/
+}
 
 add_action('wpcf7_mail_sent', 'after_sent_mail');
 
@@ -662,13 +666,33 @@ function after_sent_mail($cf7)
       $user_id = username_exists($data['your-login-admin']);
 
       if (!$user_id and email_exists($data['email-admin']) == false) {
-        if (strlen($data['password']) < 8) {
+        if (strlen($data['password']) < 2) {
           $data['password'] = randomPassword();
         }
         $user_id = wp_create_user($data['your-login-admin'], $data['password'], $data['email-admin']);
+
+        $user = new \WP_User($user_id);
+        $user->set_role('registered');
+
+        $biura_id = get_blog_id_from_url("biura.wpdev.wapro.pl");
+        if ($biura_id) {
+          add_user_to_blog($biura_id, $user_id, 'brakbiuro');
+        }
+
+        $wpdev_id = get_blog_id_from_url("wpdev.wapro.pl");
+        if ($wpdev_id) {
+          add_user_to_blog($wpdev_id, $user_id, 'brak');
+        }
+
+        $pomoc_id = get_blog_id_from_url("pomoc.wpdev.wapro.pl");
+        if ($pomoc_id) {
+          add_user_to_blog($pomoc_id, $user_id, 'brak');
+        }
       }
 
       // TODO: Modify user data (NIP, etc.)
+      // NIP in the user data
+      update_field('field_5dad6f08461cd', $data['your-nip-register'], 'user_' . $user_id);
 
       // Adding dealer localization
       // Add Post with dealer localization
@@ -695,6 +719,9 @@ function after_sent_mail($cf7)
 
         // Create new post
         $new_post_id = wp_insert_post($args);
+
+        // UserID in the post data
+        update_field('field_5d9dce5fc0656', $user_id, 'post_' . $new_post_id);
 
         $taxonomies = get_object_taxonomies($post->post_type); // returns array of taxonomy names for post type, ex array("category", "post_tag");
         foreach ($taxonomies as $taxonomy) {
@@ -782,10 +809,168 @@ function after_sent_mail($cf7)
       }
 
       // Send information to ERP
-      // TODO: Use webservices to send data to ERP
+      // TODO: Use webservices to send data to ERP???
+    }
+
+    // Register dealer form
+    if ($data['_wpcf7'] == '46621') {
+      // Adding user
+      $user_id = username_exists($data['your-login-admin']);
+
+      if (!$user_id and email_exists($data['email-admin']) == false) {
+        if (strlen($data['password']) < 2) {
+          $data['password'] = randomPassword();
+        }
+        $user_id = wp_create_user($data['your-login-admin'], $data['password'], $data['email-admin']);
+
+        $user = new \WP_User($user_id);
+        $user->set_role('registeredbiuro');
+
+        $dealer_id = get_blog_id_from_url("partnerzy.wpdev.wapro.pl");
+        if ($dealer_id) {
+          add_user_to_blog($dealer_id, $user_id, 'brak');
+        }
+
+        $wpdev_id = get_blog_id_from_url("wpdev.wapro.pl");
+        if ($wpdev_id) {
+          add_user_to_blog($wpdev_id, $user_id, 'brak');
+        }
+
+        $pomoc_id = get_blog_id_from_url("pomoc.wpdev.wapro.pl");
+        if ($pomoc_id) {
+          add_user_to_blog($pomoc_id, $user_id, 'brak');
+        }
+      }
+
+      // Adding dealer localization
+      // Add Post with dealer localization
+      $post_id = 45990;
+      $post = get_post($post_id);
+
+      if (isset($post) && $post != null) {
+        // new post data array
+        $args = array(
+          'comment_status' => $post->comment_status,
+          'ping_status'    => $post->ping_status,
+          'post_author'    => $post->post_author,
+          'post_content'   => $post->post_content,
+          'post_excerpt'   => $post->post_excerpt,
+          'post_name'      => $post->post_name,
+          'post_parent'    => $post->post_parent,
+          'post_password'  => $post->post_password,
+          'post_status'    => 'draft',
+          'post_title'     => $data['your-company'],
+          'post_type'      => $post->post_type,
+          'to_ping'        => $post->to_ping,
+          'menu_order'     => $post->menu_order
+        );
+
+        // Create new post
+        $new_post_id = wp_insert_post($args);
+
+        // TODO: Modify user data (add main localization)
+        //update_field('field_5dad6f08461cd', $data['your-nip-register'], 'user_' . $user_id);
+
+        $taxonomies = get_object_taxonomies($post->post_type); // returns array of taxonomy names for post type, ex array("category", "post_tag");
+        foreach ($taxonomies as $taxonomy) {
+          $post_terms = wp_get_object_terms($post_id, $taxonomy, array('fields' => 'slugs'));
+          wp_set_object_terms($new_post_id, $post_terms, $taxonomy, false);
+        }
+
+        $post_meta_infos = $wpdb->get_results("SELECT meta_key, meta_value FROM $wpdb->postmeta WHERE post_id=$post_id");
+
+        if (count($post_meta_infos) != 0) {
+          $sql_query = "INSERT INTO $wpdb->postmeta (post_id, meta_key, meta_value) ";
+          foreach ($post_meta_infos as $meta_info) {
+            $meta_key = $meta_info->meta_key;
+            if ($meta_key == '_wp_old_slug') continue;
+            if ($meta_key == 'br_adres') {
+              $meta_value = addslashes($data['your-adres']);
+            } elseif ($meta_key == 'br_kod_pocztowy') {
+              $meta_value = addslashes($data['your-code']);
+            } elseif ($meta_key == 'br_miasto') {
+              $meta_value = addslashes($data['your-city']);
+            } elseif ($meta_key == 'br_wojewodztwo') {
+              $meta_value = addslashes($data['wojewodztwo']);
+            } elseif ($meta_key == 'br_obszar_dzialania') {
+              $json = 'a:' . count($data['br-obszar-dzialania']) . ':{';
+              $i = 0;
+              foreach ($data['br-obszar-dzialania'] as $item) {
+                $json .= 'i:' . $i . ';s:' . strlen($item) . ':"' . $item . '";';
+                $i++;
+              }
+              $data['br-obszar-dzialania'] = $json . '}';
+              $meta_value = addslashes($data['br-obszar-dzialania']);
+            } elseif ($meta_key == 'br_telefon') {
+              $meta_value = addslashes($data['telefon']);
+            } elseif ($meta_key == 'br_fax') {
+              $meta_value = addslashes($data['fax']);
+            } elseif ($meta_key == 'br_email') {
+              $meta_value = addslashes($data['email-kontakt']);
+            } elseif ($meta_key == 'br_www') {
+              $meta_value = addslashes($data['your-wwww']);
+            } elseif ($meta_key == 'br_online') {
+              // IMPROVE !!!
+              $meta_value = addslashes($data['zgloszenie-biura']);
+            } elseif ($meta_key == 'br_rodzaj_biura') {
+              $json = 'a:' . count($data['br-rodzaj-biura']) . ':{';
+              $i = 0;
+              foreach ($data['br-rodzaj-biura'] as $item) {
+                $json .= 'i:' . $i . ';s:' . strlen($item) . ':"' . $item . '";';
+                $i++;
+              }
+              $data['br-rodzaj-biura'] = $json . '}';
+              $meta_value = addslashes($data['br-rodzaj-biura']);
+            } elseif ($meta_key == 'br_zakres_uslug') {
+              $json = 'a:' . count($data['br-zakres-uslug']) . ':{';
+              $i = 0;
+              foreach ($data['br-zakres-uslug'] as $item) {
+                $json .= 'i:' . $i . ';s:' . strlen($item) . ':"' . $item . '";';
+                $i++;
+              }
+              $data['br-zakres-uslug'] = $json . '}';
+              $meta_value = addslashes($data['br-zakres-uslug']);
+            } elseif ($meta_key == 'br_zakres_uslug_online') {
+              $json = 'a:' . count($data['br-zakres-uslug-online']) . ':{';
+              $i = 0;
+              foreach ($data['br-zakres-uslug-online'] as $item) {
+                $json .= 'i:' . $i . ';s:' . strlen($item) . ':"' . $item . '";';
+                $i++;
+              }
+              $data['br-zakres-uslug-online'] = $json . '}';
+              $meta_value = addslashes($data['br-zakres-uslug-online']);
+            } else {
+              $meta_value = addslashes($meta_info->meta_value);
+            }
+            $sql_query_sel[] = "SELECT $new_post_id, '$meta_key', '$meta_value'";
+            $wpdb->query($sql_query);
+          }
+          $sql_query .= implode(" UNION ALL ", $sql_query_sel);
+          $wpdb->query($sql_query);
+        }
+      }
+
+      // Send information to ERP
+      // TODO: Use webservices to send data to ERP???
     }
   }
 }
+
+function my_login_redirect($redirect_to, $request, $user)
+{
+  if (isset($user->roles) && is_array($user->roles)) {
+    if (in_array('registered', $user->roles)) {
+      $redirect_to =  'https://partnerzy.wpdev.wapro.pl/dziekujemy-za-rejestracje/';
+    }
+
+    if (in_array('registeredbiuro', $user->roles)) {
+      $redirect_to =  'https://biura.wpdev.wapro.pl/dziekujemy-za-rejestracje/';
+    }
+  }
+
+  return $redirect_to;
+}
+add_filter('login_redirect', 'my_login_redirect', 10, 3);
 
 function randomPassword()
 {

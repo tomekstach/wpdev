@@ -1,28 +1,57 @@
-.dl-obszar-dzialania .wpcf7-list-item {
-  width: 22%;
-  float: left;
+.br-obszar-dzialania .wpcf7-form-control.wpcf7-checkbox,
+.br-rodzaj-biura .wpcf7-form-control.wpcf7-checkbox,
+.br-zakres-uslug .wpcf7-form-control.wpcf7-checkbox,
+.br-zakres-uslug-online .wpcf7-form-control.wpcf7-checkbox {
+  display: flex;
+  flex-wrap: wrap;
 }
 
-.dl-produkty-sprzedaz .wpcf7-list-item,
-.dl-produkty-wdrozenie .wpcf7-list-item,
-.dl-produkty-serwis .wpcf7-list-item,
-.dl-produkty-szkolenie .wpcf7-list-item,
-.dl-produkty-posiadanie .wpcf7-list-item {
-  width: 18%;
-  float: left;
+.br-obszar-dzialania .wpcf7-list-item {
+  flex: 1 0 21%;
+  margin: 5px;
+  height: 30px;
+}
+
+.br-rodzaj-biura .wpcf7-list-item,
+.br-zakres-uslug-online .wpcf7-list-item {
+  flex: 1 0 17%;
+  margin: 5px;
+  height: 30px;
+}
+
+.br-zakres-uslug .wpcf7-list-item {
+  flex: 1 0 31%;
+  margin: 5px;
+  height: 30px;
 }
 
 .nip-container {
   margin-bottom: 35px;
 }
 
+.wpcf7-password::placeholder {
+  color: #999999;
+}
+
+
+/* Edge */
+
+.wpcf7-password::-webkit-input-placeholder {
+  color: #999999;
+}
+
+
+/* Internet Explorer 10-11 */
+
+.wpcf7-password:-ms-input-placeholder {
+  color: #999999;
+}
+
 @media screen and (max-width: 992px) {
-  .dl-obszar-dzialania .wpcf7-list-item,
-  .dl-produkty-sprzedaz .wpcf7-list-item,
-  .dl-produkty-wdrozenie .wpcf7-list-item,
-  .dl-produkty-serwis .wpcf7-list-item,
-  .dl-produkty-szkolenie .wpcf7-list-item,
-  .dl-produkty-posiadanie .wpcf7-list-item {
+  .br-obszar-dzialania .wpcf7-list-item,
+  .br-rodzaj-biura .wpcf7-list-item,
+  .br-zakres-uslug .wpcf7-list-item,
+  .br-zakres-uslug-online .wpcf7-list-item {
     width: 100%;
     float: none;
   }

@@ -1,5 +1,15 @@
 jQuery(document).ready(function($) {
 
+  $('input.wpcf7-submit').click(function(e) {
+    if ($('#password-field').val() == '' || $('#password-field').val().length < 8) {
+      var randomstring = Math.random().toString(36).slice(-8);
+      $('#password').val(randomstring);
+      $('#password-field').val(randomstring);
+    } else {
+      $('#password').val($('#password-field').val());
+    }
+  });
+
   $('#get-nip-1').click(function(e) {
     if (!ValidateNip($('#input-nip').val())) {
       if (!$('.numbernip .wpcf7-not-valid-tip').length) {
@@ -62,35 +72,3 @@ function ValidateNip(nip) {
 
   return sum % 11 === controlNumber;
 }
-
-/*function soap(nip) {
-  var xmlhttp = new XMLHttpRequest();
-  xmlhttp.open('POST', 'https://mcl.assecobs.pl/ERP_Service/services_integration_api/ApiWebService.ashx?wsdl&dbc=ABS_TEST', true);
-
-  // build SOAP request
-  var sr =
-    '<?xml version="1.0" encoding="utf-8"?>' +
-    '<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:ass="http://www.assecobs.pl">' +
-    '<soapenv:Header />' +
-    '<soapenv:Body>' +
-    '<ass:DPAGREEMENTGET>' +
-    '<ass:ArrayDPAgreementGetData>' +
-    '<ass:DPAgreementGetData>' +
-    '<ass:NIPSameCyfry>' + nip + '</ass:NIPSameCyfry>' +
-    '</ass:DPAgreementGetData>' +
-    '</ass:ArrayDPAgreementGetData>' +
-    '</ass:DPAGREEMENTGET>' +
-    '</soapenv:Body>' +
-    '</soapenv:Envelope>';
-
-  xmlhttp.onreadystatechange = function() {
-      if (xmlhttp.readyState == 4) {
-        if (xmlhttp.status == 200) {
-          console.log(xmlhttp.responseText);
-        }
-      }
-    }
-    // Send the POST request
-  xmlhttp.setRequestHeader('Content-Type', 'text/xml');
-  xmlhttp.send(sr);
-}*/

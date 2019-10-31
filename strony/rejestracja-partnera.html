@@ -1,4 +1,4 @@
-<script type="text/javascript" src="wp-content/themes/morz/custom/rejestracja.js?ver=20191015005" class="ui-sortable-handle"></script>
+<script type="text/javascript" src="wp-content/themes/morz/custom/rejestracja.js?ver=20191024002" class="ui-sortable-handle"></script>
 <link rel="stylesheet" id="rejestracja-css" href="wp-content/themes/morz/custom/rejestracja.css?ver=20191023002" type="text/css" media="all">
 
 <div class="cf7-builder-container-row1 cf7-builder-container-row-inner cf7-main-builder dropped ui-sortable-handle" id="cf7-container-builder-1568222430052">
@@ -520,7 +520,7 @@
           </div>
           <div class="cf7_text_label"></div>
           <div class="cf7_font"></div>
-          <div class="cf7_text_shortcode"><input type="password" class="wpcf7-form-control wpcf7-text wpcf7-password" name="password" placeholder="Hasło">
+          <div class="cf7_text_shortcode"><input type="password" class="wpcf7-form-control wpcf7-text wpcf7-password" id="password-field" name="password-field" placeholder="Hasło">
           </div>
         </div>
       </div>
@@ -758,7 +758,7 @@
           <div class="cf7_text_shortcode">
             <div class="fl-module fl-module-vamtam-heading fl-node-5d4154ee3c91e" data-node="5d4154ee3c91e">
               <div class="fl-module-content fl-node-content">
-                <h3 class="vamtam-heading ">Firma zainteresowana jest prowadzeniem</h3>
+                <h3 class="vamtam-heading ">Firma zainteresowana jest prowadzeniem <span class="color-red">*</span></h3>
               </div>
             </div>
           </div>
@@ -813,7 +813,7 @@
           </div>
           <div class="cf7_text_label"></div>
           <div class="cf7_font"></div>
-          <div class="cf7_text_shortcode">[checkbox* dl-produkty-sprzedaz use_label_element "WAPRO Mag" "WAPRO Kaper" "WAPRO Fakir" "WAPRO Gang" "WAPRO Best"]</div>
+          <div class="cf7_text_shortcode">[checkbox dl-produkty-sprzedaz use_label_element "WAPRO Mag" "WAPRO Kaper" "WAPRO Fakir" "WAPRO Gang" "WAPRO Best"]</div>
         </div>
       </div>
     </div>
@@ -865,7 +865,7 @@
           </div>
           <div class="cf7_text_label"></div>
           <div class="cf7_font"></div>
-          <div class="cf7_text_shortcode">[checkbox* dl-produkty-wdrozenie use_label_element "WAPRO Mag" "WAPRO Kaper" "WAPRO Fakir" "WAPRO Gang" "WAPRO Best"]</div>
+          <div class="cf7_text_shortcode">[checkbox dl-produkty-wdrozenie use_label_element "WAPRO Mag" "WAPRO Kaper" "WAPRO Fakir" "WAPRO Gang" "WAPRO Best"]</div>
         </div>
       </div>
     </div>
@@ -917,7 +917,7 @@
           </div>
           <div class="cf7_text_label"></div>
           <div class="cf7_font"></div>
-          <div class="cf7_text_shortcode">[checkbox* dl-produkty-serwis use_label_element "WAPRO Mag" "WAPRO Kaper" "WAPRO Fakir" "WAPRO Gang" "WAPRO Best"]</div>
+          <div class="cf7_text_shortcode">[checkbox dl-produkty-serwis use_label_element "WAPRO Mag" "WAPRO Kaper" "WAPRO Fakir" "WAPRO Gang" "WAPRO Best"]</div>
         </div>
       </div>
     </div>
@@ -969,7 +969,7 @@
           </div>
           <div class="cf7_text_label"></div>
           <div class="cf7_font"></div>
-          <div class="cf7_text_shortcode">[checkbox* dl-produkty-szkolenie use_label_element "WAPRO Mag" "WAPRO Kaper" "WAPRO Fakir" "WAPRO Gang" "WAPRO Best"]</div>
+          <div class="cf7_text_shortcode">[checkbox dl-produkty-szkolenie use_label_element "WAPRO Mag" "WAPRO Kaper" "WAPRO Fakir" "WAPRO Gang" "WAPRO Best"]</div>
         </div>
       </div>
     </div>
@@ -1252,6 +1252,7 @@
           </div>
           <div class="cf7_font"></div>
           <div class="cf7_text_shortcode">
+            [hidden password ID:password]
             <div class="white-form-submit">[submit "Wyślij"]</div>
           </div>
         </div>

@@ -41,7 +41,9 @@ jQuery(document).ready(function($) {
         $('.firma-imie .wpcf7-not-valid-tip').remove();
         $('.firma-nazwisko .wpcf7-not-valid-tip').remove();
         if (obj.DPAgreementGetData.ArrayDPAgreementGetResult.Status == 1) {
-          //alert("RODO!!!");
+          alert("RODO!!!");
+          console.log(obj.DPAgreementGetData.ArrayDPAgreementGetResult);
+
           //$('#data-umowy').val('ustawić datę z ERP-a');
           //$('#rodo-rodzaj').val('ustawić rodzaj umowcowania z ERP-a');
           $('#zgoda-rodo').prop('checked', true);
