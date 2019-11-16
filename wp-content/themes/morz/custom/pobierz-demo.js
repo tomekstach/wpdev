@@ -1,39 +1,37 @@
-jQuery(document).ready(function($){
+jQuery(document).ready(function($) {
 
   $('#get-nip-1').click(function(e) {
     if (!ValidateNip($('#input-nip').val())) {
-      if(!$('.numbernip .wpcf7-not-valid-tip').length) {
-        $('.numbernip').append('<span role="alert" class="wpcf7-not-valid-tip">NIP jest niepoprawny!</span>');
-      }
+      $('.yl-nip .wpcf7-not-valid-tip').remove();
+      $('.yl-nip').append('<span role="alert" class="wpcf7-not-valid-tip">NIP jest niepoprawny!</span>');
       return false;
-    }
-    else {
-      $('.numbernip .wpcf7-not-valid-tip').remove();
+    } else {
+      $('.yl-nip .wpcf7-not-valid-tip').remove();
     }
 
     $.ajax({
-      url: 'https://www.wapro.pl/oferta/nip/check.php',
+      url: 'https://wpdev.wapro.pl/nip-service/checknip.php',
       type: "GET",
-      data: { nip: $('#input-nip').val() }
+      data: {
+        nip: $('#input-nip').val()
+      }
     }).done(function(string) {
       var obj = JSON.parse(string);
       if (obj.code == 200) {
         $('#input-nazwa-firmy').val(obj.content.name);
         $('#input-firma-miasto').val(obj.content.city);
-        $('.number-nip .wpcf7-not-valid-tip').remove();
+        $('.yl-nip .wpcf7-not-valid-tip').remove();
         $('.textfirma .wpcf7-not-valid-tip').remove();
-      }
-      else {
-        if(!$('.number-nip .wpcf7-not-valid-tip').length) {
-          $('.number-nip').append('<span role="alert" class="wpcf7-not-valid-tip">' + obj.content + '</span>');
-        }
+      } else {
+        $('.yl-nip .wpcf7-not-valid-tip').remove();
+        $('.yl-nip').append('<span role="alert" class="wpcf7-not-valid-tip">' + obj.content + '</span>');
       }
     });
   });
 });
 
 function ValidateNip(nip) {
-  if(typeof nip !== 'string')
+  if (typeof nip !== 'string')
     return false;
 
   nip = nip.replace(/[\ \-]/gi, '');

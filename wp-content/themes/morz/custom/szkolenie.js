@@ -2,16 +2,15 @@ jQuery(document).ready(function($) {
 
   $('#get-nip-1').click(function(e) {
     if (!ValidateNip($('#input-nip').val())) {
-      if (!$('.numbernip .wpcf7-not-valid-tip').length) {
-        $('.numbernip').append('<span role="alert" class="wpcf7-not-valid-tip">NIP jest niepoprawny!</span>');
-      }
+      $('.nip .wpcf7-not-valid-tip').remove();
+      $('.nip').append('<span role="alert" class="wpcf7-not-valid-tip">NIP jest niepoprawny!</span>');
       return false;
     } else {
-      $('.numbernip .wpcf7-not-valid-tip').remove();
+      $('.nip .wpcf7-not-valid-tip').remove();
     }
 
     $.ajax({
-      url: 'https://wpdev.wapro.pl/wp-content/themes/morz/custom/checknip.php',
+      url: 'https://pomoc.wpdev.wapro.pl/nip-service/checknip.php',
       type: "GET",
       data: {
         nip: $('#input-nip').val()
@@ -20,13 +19,17 @@ jQuery(document).ready(function($) {
       var obj = JSON.parse(string);
       if (obj.code == 200) {
         $('#input-nazwa-firmy').val(obj.content.name);
-        //$('#formfield_327').val(obj.content.city);
-        $('.number-nip .wpcf7-not-valid-tip').remove();
-        $('.textfirma .wpcf7-not-valid-tip').remove();
+        $('#input-firma-miasto').val(obj.content.city);
+        $('#input-firma-kod-pocztowy').val(obj.content.postCode);
+        $('#input-firma-ulica').val(obj.content.address);
+        $('.nip .wpcf7-not-valid-tip').remove();
+        $('.firma .wpcf7-not-valid-tip').remove();
+        $('.adres .wpcf7-not-valid-tip').remove();
+        $('.poczta .wpcf7-not-valid-tip').remove();
+        $('.kod-pocztowy .wpcf7-not-valid-tip').remove();
       } else {
-        if (!$('.number-nip .wpcf7-not-valid-tip').length) {
-          $('.number-nip').append('<span role="alert" class="wpcf7-not-valid-tip">' + obj.content + '</span>');
-        }
+        $('.nip .wpcf7-not-valid-tip').remove();
+        $('.nip').append('<span role="alert" class="wpcf7-not-valid-tip">' + obj.content + '</span>');
       }
     });
   });

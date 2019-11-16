@@ -1,0 +1,58 @@
+.br-obszar-dzialania .wpcf7-form-control.wpcf7-checkbox,
+.br-rodzaj-biura .wpcf7-form-control.wpcf7-checkbox,
+.br-zakres-uslug .wpcf7-form-control.wpcf7-checkbox,
+.br-zakres-uslug-online .wpcf7-form-control.wpcf7-checkbox {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.br-obszar-dzialania .wpcf7-list-item {
+  flex: 1 0 21%;
+  margin: 5px;
+  height: 30px;
+}
+
+.br-rodzaj-biura .wpcf7-list-item,
+.br-zakres-uslug-online .wpcf7-list-item {
+  flex: 1 0 17%;
+  margin: 5px;
+  height: 30px;
+}
+
+.br-zakres-uslug .wpcf7-list-item {
+  flex: 1 0 31%;
+  margin: 5px;
+  height: 30px;
+}
+
+.nip-container {
+  margin-bottom: 35px;
+}
+
+.wpcf7-password::placeholder {
+  color: #999999;
+}
+
+
+/* Edge */
+
+.wpcf7-password::-webkit-input-placeholder {
+  color: #999999;
+}
+
+
+/* Internet Explorer 10-11 */
+
+.wpcf7-password:-ms-input-placeholder {
+  color: #999999;
+}
+
+@media screen and (max-width: 992px) {
+  .br-obszar-dzialania .wpcf7-list-item,
+  .br-rodzaj-biura .wpcf7-list-item,
+  .br-zakres-uslug .wpcf7-list-item,
+  .br-zakres-uslug-online .wpcf7-list-item {
+    width: 100%;
+    float: none;
+  }
+}
