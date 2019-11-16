@@ -477,6 +477,18 @@ function custom_online_acceptance_validation_filter($result, $tag)
     }
   }
 
+  if ($tag->name == 'zgoda-1') {
+    if (!isset($_POST['zgoda-1'])) {
+      $result->invalidate($tag, "Wyrażenie zgody jest wymagane.");
+    }
+  }
+
+  if ($tag->name == 'zgoda-2') {
+    if (!isset($_POST['zgoda-2'])) {
+      $result->invalidate($tag, "Wyrażenie zgody jest wymagane.");
+    }
+  }
+
   return $result;
 }
 
@@ -582,28 +594,47 @@ function custom_archive_text_validation_filter($result, $tag)
         $result->invalidate($tag, $nip24->getLastError());
       }
     }
-
-    /*$url    = 'https://mcl.assecobs.pl/ERP_Service/services_integration_api/ApiWebService.ashx?wsdl&dbc=ABS_TEST';
-    //$url    = 'https://mcl.assecobs.pl/ERP_Service_Prod/services_integration_api/ApiWebService.ashx?wsdl&dbc=ABS_PROD';
-
-    $client = new SoapClient($url, array("trace" => 1, "exception" => 0));
-
-    //$params   = array('ArrayCustomerGetData' => array('CustomerGetData' => array('NIPSameCyfry' => $nip)));
-    //$response = $client->CUSTOMERGET($params);
-
-    $params   = array('ArrayDPAgreementGetData' => array('DPAgreementGetData' => array('NIPSameCyfry' => $nip)));
-    $response = $client->DPAgreementGet($params);
-
-    print_r($response);*/
-
-    //if (email_exists($_POST['your-nip-register'])) {
-    //$result->invalidate($tag, "Uzytkownik o podanym NIP-ie juz istnieje w systemie.");
-    //}
   }
 
   if ($tag->name == 'your-login-admin') {
     if (username_exists($_POST['your-login-admin'])) {
       $result->invalidate($tag, "Uzytkownik o podanej nazwie juz istnieje w systemie.");
+    }
+  }
+
+  return $result;
+}
+
+add_filter('wpcf7_validate_text', 'custom_text_validation_filter', 20, 2);
+
+function custom_text_validation_filter($result, $tag)
+{
+  if ($tag->name == 'partner-NIP' or $tag->name == 'biuro-NIP') {
+    require_once 'custom/NIP24/NIP24Client.php';
+
+    \NIP24\NIP24Client::registerAutoloader();
+
+    $nip24 = new \NIP24\NIP24Client('wRocgSXQIItj', '2PEXnwYwCwVA');
+
+    if ($tag->name == 'partner-NIP') {
+      $nip = preg_replace('/\s+/', '', str_replace('-', '', strip_tags($_POST['partner-NIP'])));
+    } else {
+      $nip = preg_replace('/\s+/', '', str_replace('-', '', strip_tags($_POST['biuro-NIP'])));
+    }
+
+    if (!empty($nip)) {
+      $account = $nip24->getAccountStatus();
+
+      if (!$account) {
+        $result->invalidate($tag, $nip24->getLastError());
+      } else {
+        // Wywołanie metody zwracającej szczegółowe dane firmy
+        $all = $nip24->getAllDataExt(\NIP24\Number::NIP, $nip, false);
+
+        if (!$all) {
+          $result->invalidate($tag, $nip24->getLastError());
+        }
+      }
     }
   }
 
@@ -617,6 +648,48 @@ function custom_archive_email_validation_filter($result, $tag)
   if ($tag->name == 'email-admin') {
     if (email_exists($_POST['email-admin'])) {
       $result->invalidate($tag, "Uzytkownik o podanym adresie email juz istnieje w systemie.");
+    }
+  }
+
+  return $result;
+}
+
+add_filter('wpcf7_validate_email', 'custom_email_validation_filter', 20, 2);
+
+function custom_email_validation_filter($result, $tag)
+{
+  if ($_POST['_wpcf7'] == '35288') {
+    if ($tag->name == 'partner-email') {
+      if (($_POST['partner-email'] != '' || $_POST['partner-NIP'] != '') && ($_POST['biuro-email'] != '' && $_POST['biuro-NIP'] != '')) {
+        $result->invalidate($tag, "Niedozwolone jest podanie danych biura i partnera.");
+      }
+
+      if (($_POST['partner-email'] == '' || $_POST['partner-NIP'] == '') && ($_POST['partner-email'] != '' || $_POST['partner-NIP'] != '')) {
+        $result->invalidate($tag, "Konieczne jest podanie NIP-u oraz adresu e-mail partnera.");
+      }
+    }
+
+    if ($tag->name == 'biuro-email') {
+      if (($_POST['partner-email'] != '' && $_POST['partner-NIP'] != '') && ($_POST['biuro-email'] != '' || $_POST['biuro-NIP'] != '')) {
+        $result->invalidate($tag, "Niedozwolone jest podanie danych biura i partnera.");
+      }
+
+      if (($_POST['biuro-email'] == '' || $_POST['biuro-NIP'] == '') && ($_POST['biuro-email'] != '' || $_POST['biuro-NIP'] != '')) {
+        $result->invalidate($tag, "Konieczne jest podanie NIP-u oraz adresu e-mail biura.");
+      }
+    }
+  }
+
+  return $result;
+}
+
+add_filter('wpcf7_validate_password*', 'custom_archive_password_validation_filter', 20, 2);
+
+function custom_archive_password_validation_filter($result, $tag)
+{
+  if ($tag->name == 'password') {
+    if (strlen($_POST['password']) < 8) {
+      $result->invalidate($tag, "Hasło musi mieć minimum 8 znaków.");
     }
   }
 
@@ -869,7 +942,25 @@ function after_sent_mail($cf7)
         $new_post_id = wp_insert_post($args);
 
         // TODO: Modify user data (add main localization)
-        //update_field('field_5dad6f08461cd', $data['your-nip-register'], 'user_' . $user_id);
+        update_field('field_5d79f7ed7eaff', $user_id, 'post_' . $new_post_id);
+        update_field('field_5db4af987454e', $new_post_id, 'user_' . $user_id);
+        update_field('field_5dbd6327d2561', $data['your-company'], 'user_' . $user_id);
+        update_field('field_5dbd6353d2562', $data['your-adres'], 'user_' . $user_id);
+        update_field('field_5dbd6369d2563', $data['your-code'] . ' ' . $data['your-city'], 'user_' . $user_id);
+        update_field('field_5dbd6381d2564', $data['wojewodztwo'], 'user_' . $user_id);
+        update_field('field_5dbd638dd2565', $data['your-nip-register'], 'user_' . $user_id);
+        update_field('field_5dbd63a3d2566', $data['email'], 'user_' . $user_id);
+        if (array_key_exists('czy-testowy', $data)) {
+          if (!empty($data['czy-testowy'][0])) {
+            update_field('field_5dbd63bbd2567', 'tak', 'user_' . $user_id);
+          } else {
+            update_field('field_5dbd63bbd2567', 'nie', 'user_' . $user_id);
+          }
+        } else {
+          update_field('field_5dbd63bbd2567', 'nie', 'user_' . $user_id);
+        }
+        update_field('field_5dbd63d0d2568', $data['your-name'] . ' ' . $data['your-lastname'], 'user_' . $user_id);
+        update_field('field_5dbd63e2d2569', $data['telefon'], 'user_' . $user_id);
 
         $taxonomies = get_object_taxonomies($post->post_type); // returns array of taxonomy names for post type, ex array("category", "post_tag");
         foreach ($taxonomies as $taxonomy) {
@@ -906,12 +997,13 @@ function after_sent_mail($cf7)
             } elseif ($meta_key == 'br_fax') {
               $meta_value = addslashes($data['fax']);
             } elseif ($meta_key == 'br_email') {
-              $meta_value = addslashes($data['email-kontakt']);
+              $meta_value = addslashes($data['email-dla-klientow']);
             } elseif ($meta_key == 'br_www') {
               $meta_value = addslashes($data['your-wwww']);
             } elseif ($meta_key == 'br_online') {
-              // IMPROVE !!!
-              $meta_value = addslashes($data['zgloszenie-biura']);
+              if ($data['zgloszenie-biura']) {
+                $meta_value = 'tak';
+              }
             } elseif ($meta_key == 'br_rodzaj_biura') {
               $json = 'a:' . count($data['br-rodzaj-biura']) . ':{';
               $i = 0;
@@ -953,6 +1045,88 @@ function after_sent_mail($cf7)
       // Send information to ERP
       // TODO: Use webservices to send data to ERP???
     }
+
+    // Korzystaj online form
+    if ($data['_wpcf7'] == '35288') {
+      if ($data['umowa_podpisana'] == '0') {
+        $to = $data['rodo-e-mail'];
+        $subject = 'Potwierdzenie zawarcia umowy przetwarzania danych osobowych';
+        $headers[] = 'From: WAPRO ERP <kontakt@wapro.pl>';
+        $headers[] = 'Reply-To: sprzedaz.wapro@assecobs.pl';
+        $attachments = array(WP_CONTENT_DIR . '/uploads/2019/10/Umowa_powierzenia_przetwarzania_danych_osobowych.pdf');
+        $message = '<body bgcolor="#f7f5f5" style="background-color:#f7f5f5;">
+        <table border="0" cellspacing="0" cellpadding="0" align="center" width="600" bgcolor="#fff" style="width:600px; background-color:#fff;">
+          <tbody width="600" style="width:600px;">
+            <tr width="600" style="width:600px;">
+              <td colspan="3">
+                <table>
+                  <tr>
+                    <td width="200" style="width:200px;"><img BORDER="0" style="display:block; padding:0; margin:0;" src="http://www.assecobs.pl/storage/mail/stat/logo.png" alt="WAPRO ERP by Asseco" title="WAPRO ERP by Asseco" /></td>
+                    <td width="400" style="width:400px;">
+                      <table>
+                        <tr>
+                          <td width="360" align="right" style="width:360px; text-align:right; font-family:arial; font-size:14px; color:#000; text-decoration:none;">
+                            <a style="font-family:arial; font-size:14px; color:#000; text-decoration:none;" href="http://www.wapro.pl">WAPRO ERP</a> 
+                          </td>
+                          <td width="40" style="width:40px;"></td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+            <tr width="600" style="width:600px;">
+              <td colspan="3"><img BORDER="0" style="display:block; padding:0; margin:0;" src="http://www.assecobs.pl/storage/mail/stat/header-line.png" alt="" title="" /></td>
+            </tr>
+            <tr width="600" style="width:600px;">
+              <td width="40" style="width:40px;"></td>
+              <td width="520" style="width:580px;">
+                        
+      
+      <h2 style="font-family:Arial, Helvetica, Verdana, sans-serif;"> Szanowni Państwo! </h2>
+      
+      <p style="font-size:12px; text-align:justify; font-family:Arial, Helvetica, Verdana, sans-serif;">
+      Potwierdzamy zawarcie z nami umowy powierzenia przetwarzania danych osobowych w treści jak w załączeniu, przy czym: 
+      <br><br>
+      Osoba zawierająca umowę: ' . $data['rodo-name'] . ' (' . $data['rodo-rodzaj'] . ') 
+      <br><br>
+      Data zawarcia: ' . $data['data_podpisania_umowy'] . ' 
+      <br><br>
+      Adres e-mail do zgłaszania naruszeń: ' . $data['rodo-e-mail'] . ' 
+      <br><br>
+      Umowa została zawarta zdalnie przez kliknięcie w przycisk i akceptację danych w formularzu przystąpienia do umowy. 
+      <br><br>
+      Przypominamy, że nie jest wymagane drukowanie i przesyłanie papierowego egzemplarza podpisanej umowy.
+      </p>
+                <table border="0" cellspacing="0" cellpadding="0">
+                  <tr>
+                    <td style="height: 118px">
+                      <strong style="font-family:arial; font-size:14px;">
+                      <br>
+                      Pozdrawiamy</strong><br />
+                      <span style="font-family:arial; color:#da0d14; font-size:14px;">Zespół WAPRO ERP</span>
+      
+                      <p style="font-family:arial; font-size:14px;margin-bottom:20px;">
+                        Asseco Business Solutions S.A.<br />
+                        Oddział w Warszawie<br />
+                        ul. Adama Branickiego 13<br />
+                        <a style="font-family:arial; color:#da0d14; font-size:14px; text-decoration:underline;" href="http://wapro.pl">wapro.pl</a>
+      
+                      </p>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+              <td width="40" style="width:40px;"></td>
+            </tr>
+          </tbody>
+        </table>
+      </body>';
+
+        wp_mail($to, $subject, $message, $headers, $attachments);
+      }
+    }
   }
 }
 
@@ -972,12 +1146,75 @@ function my_login_redirect($redirect_to, $request, $user)
 }
 add_filter('login_redirect', 'my_login_redirect', 10, 3);
 
+$customError = 'test';
+
+function custom_login()
+{
+  if (array_key_exists('custom_login', $_POST)) {
+    $creds = array();
+    $creds['user_login'] = $_POST['log'];
+    $creds['user_password'] = $_POST['pwd'];
+
+    if (array_key_exists('rememberme', $_POST)) {
+      $creds['remember'] = true;
+    } else {
+      $creds['remember'] = false;
+    }
+
+    $user = wp_signon($creds, false);
+    if (is_wp_error($user)) {
+      wp_redirect(site_url('logowanie/?customError=' . array_keys($user->errors)[0]));
+      exit;
+    } else {
+      if (array_key_exists('redirect_to', $_POST)) {
+        wp_redirect($_POST['redirect_to']);
+      } else {
+        wp_redirect(site_url());
+      }
+      exit;
+    }
+  }
+}
+// run it before the headers and cookies are sent
+add_action('init', 'custom_login');
+
+function custom_logout()
+{
+  if (array_key_exists('customAction', $_GET)) {
+    if ($_GET['customAction'] == 'logout') {
+      //wp_destroy_current_session();
+      //wp_clear_auth_cookie();
+      wp_logout();
+
+      if (array_key_exists('redirect_to', $_POST)) {
+        wp_redirect($_POST['redirect_to']);
+      } elseif (array_key_exists('redirect_to', $_GET)) {
+        wp_redirect($_GET['redirect_to']);
+      } else {
+        wp_redirect(site_url());
+      }
+      exit;
+    }
+  }
+}
+// run it before the headers and cookies are sent
+add_action('init', 'custom_logout');
+
+// Remove Private, Protected prefix from post Title
+add_filter('private_title_format', 'cv_disable_title_prefix', 99, 2);
+add_filter('protected_title_format', 'cv_disable_title_prefix', 99, 2);
+function cv_disable_title_prefix($format, $post)
+{
+  $format = '%s';
+  return $format;
+}
+
 function randomPassword()
 {
   $alphabet = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890#$%^&*!?<>';
   $pass = array();
   $alphaLength = strlen($alphabet) - 1;
-  for ($i = 0; $i < 8; $i++) {
+  for ($i = 0; $i < 20; $i++) {
     $n = rand(0, $alphaLength);
     $pass[] = $alphabet[$n];
   }

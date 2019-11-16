@@ -2,16 +2,15 @@ jQuery(document).ready(function($) {
 
   $('#get-nip-1').click(function(e) {
     if (!ValidateNip($('#input-nip').val())) {
-      if (!$('.nip .wpcf7-not-valid-tip').length) {
-        $('.nip').append('<span role="alert" class="wpcf7-not-valid-tip">NIP jest niepoprawny!</span>');
-      }
+      $('.nip .wpcf7-not-valid-tip').remove();
+      $('.nip').append('<span role="alert" class="wpcf7-not-valid-tip">NIP jest niepoprawny!</span>');
       return false;
     } else {
       $('.nip .wpcf7-not-valid-tip').remove();
     }
 
     $.ajax({
-      url: 'https://pomoc.wpdev.wapro.pl/nip/checknip.php',
+      url: 'https://pomoc.wpdev.wapro.pl/nip-service/checknip.php',
       type: "GET",
       data: {
         nip: $('#input-nip').val()
@@ -29,9 +28,8 @@ jQuery(document).ready(function($) {
         $('.poczta .wpcf7-not-valid-tip').remove();
         $('.kod-pocztowy .wpcf7-not-valid-tip').remove();
       } else {
-        if (!$('.nip .wpcf7-not-valid-tip').length) {
-          $('.nip').append('<span role="alert" class="wpcf7-not-valid-tip">' + obj.content + '</span>');
-        }
+        $('.nip .wpcf7-not-valid-tip').remove();
+        $('.nip').append('<span role="alert" class="wpcf7-not-valid-tip">' + obj.content + '</span>');
       }
     });
   });

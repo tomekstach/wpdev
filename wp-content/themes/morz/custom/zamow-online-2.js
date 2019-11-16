@@ -1,58 +1,93 @@
 jQuery(document).ready(function($) {
 
   $('.multistep-cf7-next').click(function(e) {
-    if ($('#rodo-e-mail').val() == '' && $('#zgoda-rodo').prop("checked") == true) {
+
+    if ($('#input-nip').val() != '') {
+      console.log('Check RODO contract!');
+
+      $('#rodo-name').val($('#input-firma-imie').val() + ' ' + $('#input-firma-nazwisko').val());
       $('#rodo-e-mail').val($('#input-firma-email').val());
+
+      $.ajax({
+        url: 'https://wpdev.wapro.pl/erp-service/erp_service.php',
+        type: "GET",
+        data: {
+          nip: $('#input-nip').val()
+        }
+      }).done(function(string) {
+        var obj = JSON.parse(string);
+
+        //console.log(obj.content);
+
+        if (obj.code == 200) {
+
+          if (obj.content.ArrayDPAgreementGetResult.DPAgreementGetResult.DataPodpisania) {
+            //console.log(obj.content.ArrayDPAgreementGetResult);
+
+            var d = new Date(obj.content.ArrayDPAgreementGetResult.DPAgreementGetResult.DataPodpisania);
+            var month = d.getMonth() + 1;
+            var day = d.getDate();
+            var output = (day < 10 ? '0' : '') + day + '/' +
+              (month < 10 ? '0' : '') + month + '/' +
+              d.getFullYear();
+
+            var dataDo = new Date(obj.content.ArrayDPAgreementGetResult.DPAgreementGetResult.DataDo);
+            var current = new Date();
+
+            if (obj.content.ArrayDPAgreementGetResult.DPAgreementGetResult.Hosting == '1' && dataDo > current) {
+              $('#rodo-rodzaj').val(obj.content.ArrayDPAgreementGetResult.DPAgreementGetResult.RodzajUmocowania);
+              $('#zgoda-rodo').attr('checked', true);
+              $('#data-umowy').val(output);
+              $('#umowa-podpisana').val('1');
+              $('#data-podpisania-umowy').html(output);
+              $('#formularz-rodo').css('display', 'none');
+              $('#formularz-rodo-info').css('display', 'block');
+            } else {
+              $('#umowa-podpisana').val('0');
+            }
+          }
+        }
+      });
     }
   });
 
   $('#get-nip-1').click(function(e) {
     if (!ValidateNip($('#input-nip').val())) {
-      if (!$('.numbernip .wpcf7-not-valid-tip').length) {
-        $('.numbernip').append('<span role="alert" class="wpcf7-not-valid-tip">NIP jest niepoprawny!</span>');
-      }
+      $('.wpcf7-form-control-wrap.NIP .wpcf7-not-valid-tip').remove();
+      $('.wpcf7-form-control-wrap.NIP').append('<span role="alert" class="wpcf7-not-valid-tip">NIP jest niepoprawny!</span>');
       return false;
     } else {
-      $('.numbernip .wpcf7-not-valid-tip').remove();
+      $('.wpcf7-form-control-wrap.NIP .wpcf7-not-valid-tip').remove();
     }
 
+    console.log('Check nip and get nip data!');
+
     $.ajax({
-      url: 'https://wpdev.wapro.pl/nip/checknip.php',
+      url: 'https://wpdev.wapro.pl/nip-service/checknip.php',
       type: "GET",
       data: {
         nip: $('#input-nip').val()
       }
     }).done(function(string) {
       var obj = JSON.parse(string);
-      if (obj.code == 200) {
-        console.log(obj.content.DPAgreementGetData);
 
+      if (obj.code == 200) {
         $('#input-nazwa-firmy').val(obj.content.name);
         $('#input-firma-miasto').val(obj.content.city);
         $('#input-firma-kod-pocztowy').val(obj.content.postCode);
         $('#input-firma-ulica').val(obj.content.address);
         $('#input-firma-imie').val(obj.content.firstname);
         $('#input-firma-nazwisko').val(obj.content.lastname);
-        $('.NIP .wpcf7-not-valid-tip').remove();
+        $('.wpcf7-form-control-wrap.NIP .wpcf7-not-valid-tip').remove();
         $('.firma .wpcf7-not-valid-tip').remove();
         $('.firma-miasto .wpcf7-not-valid-tip').remove();
         $('.firma-kod-pocztowy .wpcf7-not-valid-tip').remove();
         $('.firma-ulica .wpcf7-not-valid-tip').remove();
         $('.firma-imie .wpcf7-not-valid-tip').remove();
         $('.firma-nazwisko .wpcf7-not-valid-tip').remove();
-        if (obj.DPAgreementGetData.ArrayDPAgreementGetResult.Status == 1) {
-          alert("RODO!!!");
-          console.log(obj.DPAgreementGetData.ArrayDPAgreementGetResult);
-
-          //$('#data-umowy').val('ustawić datę z ERP-a');
-          //$('#rodo-rodzaj').val('ustawić rodzaj umowcowania z ERP-a');
-          $('#zgoda-rodo').prop('checked', true);
-          $('#rodo-name').val($('#input-firma-imie').val() + ' ' + $('#input-firma-nazwisko').val());
-        }
       } else {
-        if (!$('.NIP .wpcf7-not-valid-tip').length) {
-          $('.NIP').append('<span role="alert" class="wpcf7-not-valid-tip">' + obj.content + '</span>');
-        }
+        $('.wpcf7-form-control-wrap.NIP .wpcf7-not-valid-tip').remove();
+        $('.wpcf7-form-control-wrap.NIP').append('<span role="alert" class="wpcf7-not-valid-tip">' + obj.content + '</span>');
       }
     });
   });
@@ -87,35 +122,3 @@ function ValidateNip(nip) {
 
   return sum % 11 === controlNumber;
 }
-
-/*function soap(nip) {
-  var xmlhttp = new XMLHttpRequest();
-  xmlhttp.open('POST', 'https://mcl.assecobs.pl/ERP_Service/services_integration_api/ApiWebService.ashx?wsdl&dbc=ABS_TEST', true);
-
-  // build SOAP request
-  var sr =
-    '<?xml version="1.0" encoding="utf-8"?>' +
-    '<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:ass="http://www.assecobs.pl">' +
-    '<soapenv:Header />' +
-    '<soapenv:Body>' +
-    '<ass:DPAGREEMENTGET>' +
-    '<ass:ArrayDPAgreementGetData>' +
-    '<ass:DPAgreementGetData>' +
-    '<ass:NIPSameCyfry>' + nip + '</ass:NIPSameCyfry>' +
-    '</ass:DPAgreementGetData>' +
-    '</ass:ArrayDPAgreementGetData>' +
-    '</ass:DPAGREEMENTGET>' +
-    '</soapenv:Body>' +
-    '</soapenv:Envelope>';
-
-  xmlhttp.onreadystatechange = function() {
-      if (xmlhttp.readyState == 4) {
-        if (xmlhttp.status == 200) {
-          console.log(xmlhttp.responseText);
-        }
-      }
-    }
-    // Send the POST request
-  xmlhttp.setRequestHeader('Content-Type', 'text/xml');
-  xmlhttp.send(sr);
-}*/

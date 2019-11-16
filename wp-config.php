@@ -112,7 +112,7 @@ if ( !defined('ABSPATH') )
 /** Sets up WordPress vars and included files. */
 require_once(ABSPATH . 'wp-settings.php');
 //Disable File Edits
-define('DISALLOW_FILE_EDIT', true);
+define('DISALLOW_FILE_EDIT', false); // changed!!!
 //Disable Mod Security
 define('FL_BUILDER_MODSEC_FIX', true );
 //Allow uploads all type of files

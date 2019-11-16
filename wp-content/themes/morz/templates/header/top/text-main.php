@@ -1,7 +1,7 @@
 <?php
 /*if ( ! get_option( 'vamtam_last_import_map' ) ) {
 		return;
-  }*/
+	}*/
 
 $header_text_main = vamtam_get_option('header-text-main');
 

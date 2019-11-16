@@ -1,27 +1,18 @@
 jQuery(document).ready(function($) {
 
-  $('input.wpcf7-submit').click(function(e) {
-    if ($('#password-field').val() == '' || $('#password-field').val().length < 8) {
-      var randomstring = Math.random().toString(36).slice(-8);
-      $('#password').val(randomstring);
-      $('#password-field').val(randomstring);
-    } else {
-      $('#password').val($('#password-field').val());
-    }
-  });
+  $("#password-field").attr("placeholder", "Hasło*");
 
   $('#get-nip-1').click(function(e) {
     if (!ValidateNip($('#input-nip').val())) {
-      if (!$('.numbernip .wpcf7-not-valid-tip').length) {
-        $('.numbernip').append('<span role="alert" class="wpcf7-not-valid-tip">NIP jest niepoprawny!</span>');
-      }
+      $('.your-nip-register .wpcf7-not-valid-tip').remove();
+      $('.your-nip-register').append('<span role="alert" class="wpcf7-not-valid-tip">NIP jest niepoprawny!</span>');
       return false;
     } else {
-      $('.numbernip .wpcf7-not-valid-tip').remove();
+      $('.your-nip-register .wpcf7-not-valid-tip').remove();
     }
 
     $.ajax({
-      url: 'https://biura.wpdev.wapro.pl/nip/checknip.php',
+      url: 'https://biura.wpdev.wapro.pl/nip-service/checknip.php',
       type: "GET",
       data: {
         nip: $('#input-nip').val()
@@ -41,9 +32,8 @@ jQuery(document).ready(function($) {
         $('.your-city .wpcf7-not-valid-tip').remove();
         $('.wojewodztwo .wpcf7-not-valid-tip').remove();
       } else {
-        if (!$('.number-nip .wpcf7-not-valid-tip').length) {
-          $('.number-nip').append('<span role="alert" class="wpcf7-not-valid-tip">' + obj.content + '</span>');
-        }
+        $('.your-nip-register .wpcf7-not-valid-tip').remove();
+        $('.your-nip-register').append('<span role="alert" class="wpcf7-not-valid-tip">' + obj.content + '</span>');
       }
     });
   });

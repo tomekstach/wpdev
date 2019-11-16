@@ -51,9 +51,8 @@ if (!$account) {
 
     $data->city       = $all->postCity;
     if ($all->postCode) {
-      $data->postCode   = substr($all->postCode, 0, 2).'-'.substr($all->postCode, -3);
-    }
-    else {
+      $data->postCode   = substr($all->postCode, 0, 2) . '-' . substr($all->postCode, -3);
+    } else {
       $data->postCode = '';
     }
     $data->firstname  = $all->firstname;
@@ -68,13 +67,13 @@ if (!$account) {
   }
 }
 
-$url    = 'https://mcl.assecobs.pl/ERP_Service/services_integration_api/ApiWebService.ashx?wsdl&dbc=ABS_TEST';
+/*$url    = 'https://mcl.assecobs.pl/ERP_Service/services_integration_api/ApiWebService.ashx?wsdl&DBC=ABS_TEST';
 //$url    = 'https://mcl.assecobs.pl/ERP_Service_Prod/services_integration_api/ApiWebService.ashx?wsdl&dbc=ABS_PROD';
 
 $client = new SoapClient($url, array("trace" => 1, "exception" => 0));
 
 $params   = array('ArrayDPAgreementGetData' => array('DPAgreementGetData' => array('NIPSameCyfry' => $nip)));
-$json->DPAgreementGetData = $client->DPAgreementGet($params);
+$json->DPAgreementGetData = $client->DPAgreementGet($params);*/
 
 $out = html_entity_decode(stripslashes(json_encode($json, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)));
 

@@ -1,4 +1,12 @@
 <?php
+if (array_key_exists('customError', $_GET)) {
+  if ($_GET['customError'] == 'incorrect_password') {
+    $customError = '<strong>BŁĄD</strong>: Wprowadzone hasło nie jest poprawne!';
+  } else {
+    $customError = '<strong>BŁĄD</strong>: Wprowadzona nazwa użytkownika nie jest poprawna!';
+  }
+}
+
 $current_url       = remove_query_arg('fake_arg');
 $redirect_url       = $current_url;
 $logout_redirect_url   = $current_url;
@@ -15,16 +23,25 @@ if ('yes' == $settings->redirect_after_logout && !empty($settings->redirect_logo
   $logout_redirect_url = $settings->redirect_logout_url;
 }
 
+if (array_key_exists('redirect_to', $_GET)) {
+  $redirect_url         = $_GET['redirect_to'];
+  $logout_redirect_url  = $_GET['redirect_to'];
+}
 ?>
 <div class="pp-login-form-wrap">
+  <?php if (isset($customError)) : ?>
+  <p class="som-password-sent-message som-password-error-message">
+    <span><?php echo $customError; ?></span>
+  </p>
+  <?php endif; ?>
   <?php if ($is_logged_in && !$is_builder_active) {
     if ('yes' == $settings->show_logged_in_message) {
       $current_user = wp_get_current_user(); ?>
   <div class="pp-login-message">
     <?php
             // translators: Here %1$s is for current user's display name and %2$s is for logout URL.
-            $msg = sprintf(__('Jesteś zalogowany(a) jako %1$s (<a href="%2$s">Wyloguj</a>)', 'bb-powerpack'), $current_user->display_name, explode('_wpnonce', (wp_logout_url($logout_redirect_url)))[0]);
-            echo apply_filters('pp_login_form_logged_in_message', $msg, $current_user->display_name, wp_logout_url($logout_redirect_url));
+            $msg = sprintf(__('Jesteś zalogowany(a) jako %1$s (<a href="%2$s">Wyloguj</a>)', 'bb-powerpack'), $current_user->display_name, explode('_wpnonce', (site_url('logowanie/?customAction=logout', 'logout')))[0]);
+            echo apply_filters('pp_login_form_logged_in_message', $msg, $current_user->display_name, site_url('logowanie/?customAction=logout', 'logout'));
             ?>
   </div>
   <?php if (!$show_label) : ?>
@@ -33,7 +50,7 @@ if ('yes' == $settings->redirect_after_logout && !empty($settings->redirect_logo
   <?php }
   } ?>
   <?php if (!$is_logged_in || $is_builder_active) { ?>
-  <form class="pp-login-form" method="post" action="<?php echo esc_url(site_url('wp-login.php', 'login_post')); ?>">
+  <form class="pp-login-form" method="post" action="<?php echo $_SERVER['REQUEST_URI']; ?>">
     <input type="hidden" name="redirect_to" value="<?php echo esc_attr($redirect_url); ?>">
     <div class="pp-login-form-fields">
       <div class="pp-login-form-field pp-field-group pp-field-type-text">
@@ -63,25 +80,17 @@ if ('yes' == $settings->redirect_after_logout && !empty($settings->redirect_logo
       <?php } ?>
 
       <div class="pp-field-group pp-field-type-submit">
+        <input type="hidden" name="custom_login" value="1" />
         <button type="submit" name="wp-submit" class="pp-login-form--button">
           <span class="pp-login-form--button-text"><?php echo $settings->button_text; ?></span>
         </button>
       </div>
 
-      <?php if ($show_lost_password || $show_register) { ?>
+      <?php if ($show_lost_password) { ?>
       <div class="pp-field-group pp-field-type-link">
         <?php if ($show_lost_password) { ?>
-        <a class="pp-login-lost-password"
-          href="<?php echo site_url('wp-login.php?action=lostpassword&redirect_to=' . $redirect_url, 'login'); ?>">
+        <a class="pp-login-lost-password" href="<?php echo site_url('resetowanie-hasla/', 'login'); ?>">
           <?php echo !empty($settings->lost_password_text) ? $settings->lost_password_text : __('Lost your password?', 'bb-powerpack'); ?>
-        </a>
-        <?php } ?>
-        <?php if ($show_register) { ?>
-        <?php if ($show_lost_password) { ?>
-        <span class="pp-login-separator"> | </span>
-        <?php } ?>
-        <a class="pp-login-register" href="<?php echo wp_registration_url(); ?>">
-          <?php _e('Register', 'bb-powerpack'); ?>
         </a>
         <?php } ?>
       </div>
