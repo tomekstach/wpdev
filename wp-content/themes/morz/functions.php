@@ -99,7 +99,16 @@ function post_br_emailwww_shortcode()
   }
 
   if ($www) {
-    $html .= '<p><a href="http://' . $www . '" target="_blank" rel="noopener noreferrer">' . $www . '</a></p> ';
+    if (substr($www, 0, 4) != 'http') {
+      $www_link = 'http://' . $www;
+    } elseif (substr($www, 0, 5) == 'https') {
+      $www_link = $www;
+      $www = substr($www, 8);
+    } else {
+      $www_link = $www;
+      $www = substr($www, 7);
+    }
+    $html .= '<p><a href="' . $www_link . '" target="_blank" rel="noopener noreferrer">' . $www . '</a></p> ';
   }
 
   return $html;
@@ -152,7 +161,16 @@ function post_dl_emailwww_shortcode()
   }
 
   if ($www) {
-    $html .= '<p><a href="http://' . $www . '" target="_blank" rel="noopener noreferrer">' . $www . '</a></p> ';
+    if (substr($www, 0, 4) != 'http') {
+      $www_link = 'http://' . $www;
+    } elseif (substr($www, 0, 5) == 'https') {
+      $www_link = $www;
+      $www = substr($www, 8);
+    } else {
+      $www_link = $www;
+      $www = substr($www, 7);
+    }
+    $html .= '<p><a href="' . $www_link . '" target="_blank" rel="noopener noreferrer">' . $www . '</a></p> ';
   }
 
   return $html;
@@ -225,7 +243,10 @@ function excerpt_br_shortcode()
     if ($email) {
       $html .= ' | ';
     }
-    $html .= '<a href="http://' . $www . '" target="_blank" rel="noopener noreferrer">strona www</a>';
+    if (substr($www, 0, 4) != 'http') {
+      $www = 'http://' . $www;
+    }
+    $html .= '<a href="' . $www . '" target="_blank" rel="noopener noreferrer">strona www</a>';
   }
 
   return $html;
@@ -283,7 +304,10 @@ function excerpt_dl_shortcode()
     if ($email) {
       $html .= ' | ';
     }
-    $html .= '<a href="http://' . $www . '" target="_blank" rel="noopener noreferrer">strona www</a>';
+    if (substr($www, 0, 4) != 'http') {
+      $www = 'http://' . $www;
+    }
+    $html .= '<a href="' . $www . '" target="_blank" rel="noopener noreferrer">strona www</a>';
   }
 
   $etykiety = explode(', ', do_shortcode('[acf field="dl_etykieta"]'));
@@ -421,6 +445,17 @@ function badges_dl_shortcode()
   return $html;
 }
 add_shortcode('badges_dl', 'badges_dl_shortcode');
+
+function show_loggedin_function($atts)
+{
+  global $current_user, $user_login;
+  $current_user = wp_get_current_user();
+  add_filter('widget_text', 'do_shortcode');
+
+  if ($user_login)
+    return $current_user->display_name;
+}
+add_shortcode('show_loggedin_as', 'show_loggedin_function');
 
 add_filter('wpcf7_validate_number*', 'custom_online_number_validation_filter', 20, 2);
 
@@ -597,8 +632,8 @@ function custom_archive_text_validation_filter($result, $tag)
   }
 
   if ($tag->name == 'your-login-admin') {
-    if (username_exists($_POST['your-login-admin'])) {
-      $result->invalidate($tag, "Uzytkownik o podanej nazwie juz istnieje w systemie.");
+    if (username_exists($_POST['your-login-admin']) && $_POST['user-exist'] == '0') {
+      $result->invalidate($tag, "Uzytkownik o podanej nazwie juz istnieje w systemie!<br/>Jezeli chcesz zarejestrować tego uzytkownika, równiez jako partnera, zaloguj się i wypełnij ten formularz jeszcze raz <a href=\"/logowanie?redirect_to=/rejestracja\">Zaloguj -></a>");
     }
   }
 
@@ -646,8 +681,8 @@ add_filter('wpcf7_validate_email*', 'custom_archive_email_validation_filter', 20
 function custom_archive_email_validation_filter($result, $tag)
 {
   if ($tag->name == 'email-admin') {
-    if (email_exists($_POST['email-admin'])) {
-      $result->invalidate($tag, "Uzytkownik o podanym adresie email juz istnieje w systemie.");
+    if (email_exists($_POST['email-admin']) && $_POST['user-exist'] == '0') {
+      $result->invalidate($tag, "Uzytkownik o podanym adresie email juz istnieje w systemie!<br/>Jezeli chcesz zarejestrować tego uzytkownika, równiez jako partnera, zaloguj się i wypełnij ten formularz jeszcze raz <a href=\"/logowanie?redirect_to=/rejestracja\">Zaloguj -></a>");
     }
   }
 
@@ -688,7 +723,7 @@ add_filter('wpcf7_validate_password*', 'custom_archive_password_validation_filte
 function custom_archive_password_validation_filter($result, $tag)
 {
   if ($tag->name == 'password') {
-    if (strlen($_POST['password']) < 8) {
+    if (strlen($_POST['password']) < 8 && $_POST['user-exist'] == '0') {
       $result->invalidate($tag, "Hasło musi mieć minimum 8 znaków.");
     }
   }
@@ -735,32 +770,44 @@ function after_sent_mail($cf7)
 
     // Register dealer form
     if ($data['_wpcf7'] == '45267') {
-      // Adding user
-      $user_id = username_exists($data['your-login-admin']);
 
-      if (!$user_id and email_exists($data['email-admin']) == false) {
-        if (strlen($data['password']) < 2) {
-          $data['password'] = randomPassword();
+      if (!array_key_exists('exist-user', $data)) {
+        // Adding user
+        $user_id = username_exists($data['your-login-admin']);
+
+        if (!$user_id and email_exists($data['email-admin']) == false) {
+          if (strlen($data['password']) < 2) {
+            $data['password'] = randomPassword();
+          }
+          $user_id = wp_create_user($data['your-login-admin'], $data['password'], $data['email-admin']);
+          update_user_meta($user_id, "first_name",  $data['your-name-admin']);
+          update_user_meta($user_id, "last_name",  $data['your-lastname-admin']);
+
+          $user = new \WP_User($user_id);
+          $user->set_role('registered');
+
+          $biura_id = get_blog_id_from_url("biura.wpdev.wapro.pl");
+          if ($biura_id) {
+            add_user_to_blog($biura_id, $user_id, 'brakbiuro');
+          }
+
+          $wpdev_id = get_blog_id_from_url("wpdev.wapro.pl");
+          if ($wpdev_id) {
+            add_user_to_blog($wpdev_id, $user_id, 'brak');
+          }
+
+          $pomoc_id = get_blog_id_from_url("pomoc.wpdev.wapro.pl");
+          if ($pomoc_id) {
+            add_user_to_blog($pomoc_id, $user_id, 'subscriber');
+          }
+        } else {
+          $user = new \WP_User($user_id);
+          $user->set_role('registered');
         }
-        $user_id = wp_create_user($data['your-login-admin'], $data['password'], $data['email-admin']);
-
+      } else {
+        $user_id = intval($data['exist-user']);
         $user = new \WP_User($user_id);
         $user->set_role('registered');
-
-        $biura_id = get_blog_id_from_url("biura.wpdev.wapro.pl");
-        if ($biura_id) {
-          add_user_to_blog($biura_id, $user_id, 'brakbiuro');
-        }
-
-        $wpdev_id = get_blog_id_from_url("wpdev.wapro.pl");
-        if ($wpdev_id) {
-          add_user_to_blog($wpdev_id, $user_id, 'brak');
-        }
-
-        $pomoc_id = get_blog_id_from_url("pomoc.wpdev.wapro.pl");
-        if ($pomoc_id) {
-          add_user_to_blog($pomoc_id, $user_id, 'brak');
-        }
       }
 
       // TODO: Modify user data (NIP, etc.)
@@ -887,32 +934,44 @@ function after_sent_mail($cf7)
 
     // Register dealer form
     if ($data['_wpcf7'] == '46621') {
-      // Adding user
-      $user_id = username_exists($data['your-login-admin']);
 
-      if (!$user_id and email_exists($data['email-admin']) == false) {
-        if (strlen($data['password']) < 2) {
-          $data['password'] = randomPassword();
+      if (!array_key_exists('exist-user', $data)) {
+        // Adding user
+        $user_id = username_exists($data['your-login-admin']);
+
+        if (!$user_id and email_exists($data['email-admin']) == false) {
+          if (strlen($data['password']) < 2) {
+            $data['password'] = randomPassword();
+          }
+          $user_id = wp_create_user($data['your-login-admin'], $data['password'], $data['email-admin']);
+          update_user_meta($user_id, "first_name",  $data['your-name-admin']);
+          update_user_meta($user_id, "last_name",  $data['your-lastname-admin']);
+
+          $user = new \WP_User($user_id);
+          $user->set_role('registeredbiuro');
+
+          $dealer_id = get_blog_id_from_url("partnerzy.wpdev.wapro.pl");
+          if ($dealer_id) {
+            add_user_to_blog($dealer_id, $user_id, 'brak');
+          }
+
+          $wpdev_id = get_blog_id_from_url("wpdev.wapro.pl");
+          if ($wpdev_id) {
+            add_user_to_blog($wpdev_id, $user_id, 'brak');
+          }
+
+          $pomoc_id = get_blog_id_from_url("pomoc.wpdev.wapro.pl");
+          if ($pomoc_id) {
+            add_user_to_blog($pomoc_id, $user_id, 'subscriber');
+          }
+        } else {
+          $user = new \WP_User($user_id);
+          $user->set_role('registeredbiuro');
         }
-        $user_id = wp_create_user($data['your-login-admin'], $data['password'], $data['email-admin']);
-
+      } else {
+        $user_id = intval($data['exist-user']);
         $user = new \WP_User($user_id);
         $user->set_role('registeredbiuro');
-
-        $dealer_id = get_blog_id_from_url("partnerzy.wpdev.wapro.pl");
-        if ($dealer_id) {
-          add_user_to_blog($dealer_id, $user_id, 'brak');
-        }
-
-        $wpdev_id = get_blog_id_from_url("wpdev.wapro.pl");
-        if ($wpdev_id) {
-          add_user_to_blog($wpdev_id, $user_id, 'brak');
-        }
-
-        $pomoc_id = get_blog_id_from_url("pomoc.wpdev.wapro.pl");
-        if ($pomoc_id) {
-          add_user_to_blog($pomoc_id, $user_id, 'brak');
-        }
       }
 
       // Adding dealer localization
@@ -1208,6 +1267,17 @@ function cv_disable_title_prefix($format, $post)
   $format = '%s';
   return $format;
 }
+
+//enqueue the script which will use the api
+function api_callings_scripts()
+{
+  wp_enqueue_script('rejestracja', get_template_directory_uri() . '/custom/rejestracja.js', ['jquery'], NULL, TRUE);
+  // Pass nonce to JS.
+  wp_localize_script('rejestracja', 'RejestracjaSettings', [
+    'nonce' => wp_create_nonce('wp_rest'),
+  ]);
+}
+add_action('wp_enqueue_scripts', 'api_callings_scripts');
 
 function randomPassword()
 {

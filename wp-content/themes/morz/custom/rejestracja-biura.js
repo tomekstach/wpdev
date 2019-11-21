@@ -2,6 +2,33 @@ jQuery(document).ready(function($) {
 
   $("#password-field").attr("placeholder", "Hasło*");
 
+  $.ajax({
+    type: "POST",
+    url: "/wp-json/wp/v2/users/me",
+    beforeSend: function(xhr) {
+      xhr.setRequestHeader('X-WP-Nonce', RejestracjaSettings.nonce);
+    },
+    success: function(data) {
+      if (data.id > 0) {
+        //console.log(data);
+
+        if (data.roles[0] == 'subscriber') {
+          $('#none-form').css('display', 'block');
+          $('#form-biuro').css('display', 'none');
+        } else {
+          $('#user-exist').val(data.id);
+          $('#password-field').val(data.name);
+          $('#your-login-admin').val(data.name);
+          $('#email-admin').val(data.email);
+          $('#your-name-admin').val(data.first_name);
+          $('#your-lastname-admin').val(data.last_name);
+          $('#exist-biuro').css('display', 'block');
+          $('#new-biuro').css('display', 'none');
+        }
+      }
+    }
+  });
+
   $('#get-nip-1').click(function(e) {
     if (!ValidateNip($('#input-nip').val())) {
       $('.your-nip-register .wpcf7-not-valid-tip').remove();

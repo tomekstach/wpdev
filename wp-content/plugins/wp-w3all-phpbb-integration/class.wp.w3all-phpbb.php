@@ -1423,6 +1423,7 @@ public static function phpbb_pass_update($user, $new_pass) {
 
      $phpbb_version = substr($phpbb_config["version"], 0, 3);
      
+     
      $wpu = get_user_by('ID', $user_id);
      
      if( $wpu === false ){ return; }
