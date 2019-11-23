@@ -12,7 +12,7 @@ $redirect_url       = $current_url;
 $logout_redirect_url   = $current_url;
 $show_label        = 'yes' == $settings->show_labels;
 $show_lost_password    = 'yes' == $settings->show_lost_password;
-$show_register       = 'yes' == $settings->show_register && get_option('users_can_register');
+//$show_register       = 'yes' == $settings->show_register && get_option('users_can_register');
 $is_logged_in      = is_user_logged_in();
 $is_builder_active    = FLBuilderModel::is_builder_active();
 

@@ -1,0 +1,21 @@
+.nip-container {
+  margin-bottom: 35px;
+}
+
+.wpcf7-password::placeholder {
+  color: #999999;
+}
+
+
+/* Edge */
+
+.wpcf7-password::-webkit-input-placeholder {
+  color: #999999;
+}
+
+
+/* Internet Explorer 10-11 */
+
+.wpcf7-password:-ms-input-placeholder {
+  color: #999999;
+}

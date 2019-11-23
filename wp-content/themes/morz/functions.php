@@ -1186,6 +1186,55 @@ function after_sent_mail($cf7)
         wp_mail($to, $subject, $message, $headers, $attachments);
       }
     }
+
+    // Register dealer form
+    if ($data['_wpcf7'] == '47120') {
+
+      if (!array_key_exists('exist-user', $data)) {
+        // Adding user
+        $user_id = username_exists($data['your-login-admin']);
+
+        if (!$user_id and email_exists($data['email-admin']) == false) {
+          if (strlen($data['password']) < 2) {
+            $data['password'] = randomPassword();
+          }
+          $user_id = wp_create_user($data['your-login-admin'], $data['password'], $data['email-admin']);
+          update_user_meta($user_id, "first_name",  $data['your-name-admin']);
+          update_user_meta($user_id, "last_name",  $data['your-lastname-admin']);
+
+          $user = new \WP_User($user_id);
+          $user->set_role('subscriber');
+
+          $dealer_id = get_blog_id_from_url("partnerzy.wpdev.wapro.pl");
+          if ($dealer_id) {
+            add_user_to_blog($dealer_id, $user_id, 'brak');
+          }
+
+          $wpdev_id = get_blog_id_from_url("wpdev.wapro.pl");
+          if ($wpdev_id) {
+            add_user_to_blog($wpdev_id, $user_id, 'brak');
+          }
+
+          $pomoc_id = get_blog_id_from_url("biuro.wpdev.wapro.pl");
+          if ($pomoc_id) {
+            add_user_to_blog($pomoc_id, $user_id, 'brak');
+          }
+        } else {
+          $user = new \WP_User($user_id);
+          $user->set_role('subscriber');
+        }
+      } else {
+        $user_id = intval($data['exist-user']);
+        $user = new \WP_User($user_id);
+        $user->set_role('subscriber');
+      }
+
+      // Add NIP to the user data
+      update_field('field_5dd7a70620a10', $data['your-nip-register'], 'user_' . $user_id);
+
+      // Send information to ERP
+      // TODO: Use webservices to send data to ERP???
+    }
   }
 }
 
