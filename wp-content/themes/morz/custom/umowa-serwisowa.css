@@ -1,5 +1,20 @@
-#main {
+h3.pp-cf7-form-title,
+p.pp-cf7-form-description {
+  display: none;
+}
+
+#formularz {
   background: linear-gradient(180deg, #EDEFF0 150px, #FFF 100px);
+}
+
+#formularz input[readonly] {
+  cursor: not-allowed;
+  background-color: #eee;
+}
+
+#formularz .wpcf7-form-control.wpcf7-select {
+  margin-top: 5px;
+  margin-bottom: 10px;
 }
 
 #main .fl-row-content-wrap {
@@ -65,7 +80,7 @@
   font: var(--vamtam-h3-font-weight) var(--vamtam-h3-font-size)/var(--vamtam-h3-line-height) var(--vamtam-h3-font-family);
   font-size: 110px;
   line-height: 130px;
-  width: 34%;
+  width: 25%;
   color: #c50a1f;
   text-align: center;
 }
@@ -74,6 +89,7 @@
   font: var(--vamtam-h3-font-weight) var(--vamtam-h3-font-size)/var(--vamtam-h3-line-height) var(--vamtam-h3-font-family);
   font-size: 50px;
   line-height: 50px;
+  width: 75%;
 }
 
 #main .umowa-serwisowa-underline {
@@ -271,7 +287,7 @@
   line-height: 1.6;
   color: #e85656;
   display: none;
-  margin: 0;
+  margin: 20px 0 0 0;
 }
 
 #main .wpcf7-form input.wpcf7-submit {
@@ -281,15 +297,37 @@
   padding: 16px 32px;
   display: inline-block;
   text-align: center;
-  transition: color .3s ease-out,border .3s ease-out,background .3s ease-out,box-shadow .3s ease-out !important;
+  transition: color .3s ease-out, border .3s ease-out, background .3s ease-out, box-shadow .3s ease-out !important;
   font: 400 14px/1em var(--vamtam-primary-font-font-family);
   color: var(--vamtam-accent-color-1-hc) !important;
   background: var(--vamtam-accent-color-1) !important;
 }
 
-#main .wpcf7-form input.wpcf7-submit:hover {
+#main .wpcf7-form a.multistep-cf7-next,
+#main .wpcf7-form a.multistep-cf7-first,
+#main .wpcf7-form a.multistep-cf7-prev,
+#main .wpcf7-form a.multistep-cf7-wyslij {
+  border: none;
+  font-size: 14px;
+  cursor: pointer;
+  transition: color .3s ease-out, border .3s ease-out, background .3s ease-out, box-shadow .3s ease-out !important;
+  font: 400 14px/1em var(--vamtam-primary-font-font-family);
+  color: var(--vamtam-accent-color-1-hc) !important;
+  background: var(--vamtam-accent-color-1) !important;
+}
+
+#main .wpcf7-form input.wpcf7-submit:hover,
+#main .wpcf7-form a.multistep-cf7-next:hover,
+#main .wpcf7-form a.multistep-cf7-first:hover,
+#main .wpcf7-form a.multistep-cf7-prev:hover,
+#main .wpcf7-form a.multistep-cf7-wyslij:hover {
+  border: none;
   background: var(--vamtam-accent-color-6) !important;
   color: var(--vamtam-accent-color-6-hc) !important;
+}
+
+#main .wpcf7-form a.multistep-cf7-first {
+  margin-right: 22px;
 }
 
 #main #get-nip-1 {

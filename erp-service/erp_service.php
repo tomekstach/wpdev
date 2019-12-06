@@ -13,8 +13,10 @@ $url = 'https://mcl.assecobs.pl/ERP_Service/services_integration_api/ApiWebServi
 
 $client = new SoapClient($url, array("trace" => 1, "exception" => 0));
 
-$params = array('ArrayDPAgreementGetData' => array('DPAgreementGetData' => array('NIPSameCyfry' => $nip)));
-$json->content = $client->DPAgreementGet($params);
+if ($nip != '') {
+  $params = array('ArrayDPAgreementGetData' => array('DPAgreementGetData' => array('NIPSameCyfry' => $nip)));
+  $json->content = $client->DPAgreementGet($params);
+}
 
 $out = html_entity_decode(stripslashes(json_encode($json, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)));
 

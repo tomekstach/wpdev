@@ -531,27 +531,37 @@ add_filter('wpcf7_validate_select*', 'custom_archive_select_validation_filter', 
 
 function custom_archive_select_validation_filter($result, $tag)
 {
-  $programy = [
-    ['name' => 'program_version_aukcje', 'title' => 'WAPRO Aukcje'],
-    ['name' => 'program_version_analizy', 'title' => 'WAPRO Analizy'],
-    ['name' => 'program_version_best', 'title' => 'WAPRO Best'],
-    ['name' => 'program_version_fakir', 'title' => 'WAPRO Fakir'],
-    ['name' => 'program_version_fakturka', 'title' => 'WAPRO Fakturka'],
-    ['name' => 'program_version_gang', 'title' => 'WAPRO Gang'],
-    ['name' => 'program_version_jpk', 'title' => 'WAPRO JPK'],
-    ['name' => 'program_version_kaper', 'title' => 'WAPRO kaper'],
-    ['name' => 'program_version_mag', 'title' => 'WAPRO mag'],
-    ['name' => 'program_version_mobile', 'title' => 'WAPRO Mobile'],
-    ['name' => 'program_version_mobile_android', 'title' => 'WAPRO Mobile Android'],
-    ['name' => 'program_version_wf_kaper_dos', 'title' => 'WF-KaPeR DOS'],
-    ['name' => 'program_version_wf_mag_dos', 'title' => 'WF-MAG DOS'],
-    ['name' => 'program_version_wf_fakir_dos', 'title' => 'WF-FaKir DOS']
-  ];
+  if ($tag->name == 'program') {
+    if ($_POST[$tag->name] == 'wybierz program') {
+      $result->invalidate($tag, "Proszę wybrać program!");
+    }
+  } elseif ($tag->name == 'sql') {
+    if ($_POST[$tag->name] == 'wybierz wersję SQL') {
+      $result->invalidate($tag, "Proszę wybrać wersję SQL!");
+    }
+  } else {
+    $programy = [
+      ['name' => 'program_version_aukcje', 'title' => 'WAPRO Aukcje'],
+      ['name' => 'program_version_analizy', 'title' => 'WAPRO Analizy'],
+      ['name' => 'program_version_best', 'title' => 'WAPRO Best'],
+      ['name' => 'program_version_fakir', 'title' => 'WAPRO Fakir'],
+      ['name' => 'program_version_fakturka', 'title' => 'WAPRO Fakturka'],
+      ['name' => 'program_version_gang', 'title' => 'WAPRO Gang'],
+      ['name' => 'program_version_jpk', 'title' => 'WAPRO JPK'],
+      ['name' => 'program_version_kaper', 'title' => 'WAPRO kaper'],
+      ['name' => 'program_version_mag', 'title' => 'WAPRO mag'],
+      ['name' => 'program_version_mobile', 'title' => 'WAPRO Mobile'],
+      ['name' => 'program_version_mobile_android', 'title' => 'WAPRO Mobile Android'],
+      ['name' => 'program_version_wf_kaper_dos', 'title' => 'WF-KaPeR DOS'],
+      ['name' => 'program_version_wf_mag_dos', 'title' => 'WF-MAG DOS'],
+      ['name' => 'program_version_wf_fakir_dos', 'title' => 'WF-FaKir DOS']
+    ];
 
-  foreach ($programy as $key => $value) {
-    if ($tag->name == $value['name'] and $_POST['program'] == $value['title']) {
-      if ($_POST[$tag->name] == 'wybierz numer wersji') {
-        $result->invalidate($tag, "Proszę wybrać wersję programu!");
+    foreach ($programy as $key => $value) {
+      if ($tag->name == $value['name'] and $_POST['program'] == $value['title']) {
+        if ($_POST[$tag->name] == 'wybierz numer wersji') {
+          $result->invalidate($tag, "Proszę wybrać wersję programu!");
+        }
       }
     }
   }
@@ -632,8 +642,8 @@ function custom_archive_text_validation_filter($result, $tag)
   }
 
   if ($tag->name == 'your-login-admin') {
-    if (username_exists($_POST['your-login-admin']) && $_POST['user-exist'] == '0') {
-      $result->invalidate($tag, "Uzytkownik o podanej nazwie juz istnieje w systemie!<br/>Jezeli chcesz zarejestrować tego uzytkownika, równiez jako partnera, zaloguj się i wypełnij ten formularz jeszcze raz <a href=\"/logowanie?redirect_to=/rejestracja\">Zaloguj -></a>");
+    if (username_exists($_POST['your-login-admin']) && !array_key_exists('exist-user', $_POST)) {
+      $result->invalidate($tag, "Uzytkownik o podanej nazwie juz istnieje w systemie! Jezeli chcesz dodać nową rolę do tego uzytkownika, zaloguj się i wypełnij ten formularz jeszcze raz.");
     }
   }
 
@@ -681,8 +691,8 @@ add_filter('wpcf7_validate_email*', 'custom_archive_email_validation_filter', 20
 function custom_archive_email_validation_filter($result, $tag)
 {
   if ($tag->name == 'email-admin') {
-    if (email_exists($_POST['email-admin']) && $_POST['user-exist'] == '0') {
-      $result->invalidate($tag, "Uzytkownik o podanym adresie email juz istnieje w systemie!<br/>Jezeli chcesz zarejestrować tego uzytkownika, równiez jako partnera, zaloguj się i wypełnij ten formularz jeszcze raz <a href=\"/logowanie?redirect_to=/rejestracja\">Zaloguj -></a>");
+    if (email_exists($_POST['email-admin']) && !array_key_exists('exist-user', $_POST)) {
+      $result->invalidate($tag, "Uzytkownik o podanej adresie e-mail juz istnieje w systemie! Jezeli chcesz dodać nową rolę do tego uzytkownika, zaloguj się i wypełnij ten formularz jeszcze raz.");
     }
   }
 
@@ -723,7 +733,7 @@ add_filter('wpcf7_validate_password*', 'custom_archive_password_validation_filte
 function custom_archive_password_validation_filter($result, $tag)
 {
   if ($tag->name == 'password') {
-    if (strlen($_POST['password']) < 8 && $_POST['user-exist'] == '0') {
+    if (strlen($_POST['password']) < 8 && !array_key_exists('exist-user', $_POST)) {
       $result->invalidate($tag, "Hasło musi mieć minimum 8 znaków.");
     }
   }
@@ -1112,6 +1122,7 @@ function after_sent_mail($cf7)
         $subject = 'Potwierdzenie zawarcia umowy przetwarzania danych osobowych';
         $headers[] = 'From: WAPRO ERP <kontakt@wapro.pl>';
         $headers[] = 'Reply-To: sprzedaz.wapro@assecobs.pl';
+        $headers[] = 'Content-Type: text/html; charset=UTF-8';
         $attachments = array(WP_CONTENT_DIR . '/uploads/2019/10/Umowa_powierzenia_przetwarzania_danych_osobowych.pdf');
         $message = '<body bgcolor="#f7f5f5" style="background-color:#f7f5f5;">
         <table border="0" cellspacing="0" cellpadding="0" align="center" width="600" bgcolor="#fff" style="width:600px; background-color:#fff;">
@@ -1195,6 +1206,7 @@ function after_sent_mail($cf7)
         $user_id = username_exists($data['your-login-admin']);
 
         if (!$user_id and email_exists($data['email-admin']) == false) {
+
           if (strlen($data['password']) < 2) {
             $data['password'] = randomPassword();
           }
@@ -1206,34 +1218,182 @@ function after_sent_mail($cf7)
           $user->set_role('subscriber');
 
           $dealer_id = get_blog_id_from_url("partnerzy.wpdev.wapro.pl");
+
           if ($dealer_id) {
             add_user_to_blog($dealer_id, $user_id, 'brak');
           }
 
           $wpdev_id = get_blog_id_from_url("wpdev.wapro.pl");
+
           if ($wpdev_id) {
             add_user_to_blog($wpdev_id, $user_id, 'brak');
           }
 
           $pomoc_id = get_blog_id_from_url("biuro.wpdev.wapro.pl");
+
           if ($pomoc_id) {
             add_user_to_blog($pomoc_id, $user_id, 'brak');
           }
         } else {
           $user = new \WP_User($user_id);
-          $user->set_role('subscriber');
+          $roles = (array) $user->roles;
+
+          if (count($roles) == 0) {
+            $user->set_role('subscriber');
+          } elseif ($roles[0] == 'brak') {
+            $user->set_role('subscriber');
+          }
         }
       } else {
         $user_id = intval($data['exist-user']);
         $user = new \WP_User($user_id);
-        $user->set_role('subscriber');
+        $roles = (array) $user->roles;
+
+        if (count($roles) == 0) {
+          $user->set_role('subscriber');
+        } elseif ($roles[0] == 'brak') {
+          $user->set_role('subscriber');
+        }
       }
 
       // Add NIP to the user data
       update_field('field_5dd7a70620a10', $data['your-nip-register'], 'user_' . $user_id);
 
+      // Add tel to the user data
+      update_field('field_5dd9596bc5807', $data['telefon'], 'user_' . $user_id);
+
+      // Add firm to the user data
+      update_field('field_5dd9597daea4f', $data['your-company'], 'user_' . $user_id);
+
       // Send information to ERP
       // TODO: Use webservices to send data to ERP???
+    }
+
+    // Umowa serwisowa form 
+    if ($data['_wpcf7'] == '47037') {
+
+      $date = date('Y-m-d H:i:s');
+
+      $args = array(
+        'comment_status' => 'closed',
+        'post_status'    => 'draft',
+        'post_title'     => 'Plik do umowy serwisowej z ' . $data['textfirma'] . ', dodany ' . $date,
+        'post_type'      => 'plik_umowy'
+      );
+
+      $programy = [
+        'program_version_aukcje' => 'WAPRO Aukcje',
+        'program_version_analizy' => 'WAPRO Analizy',
+        'program_version_best' => 'WAPRO Best',
+        'program_version_fakir' => 'WAPRO Fakir',
+        'program_version_fakturka' => 'WAPRO Fakturka',
+        'program_version_gang' => 'WAPRO Gang',
+        'program_version_jpk' => 'WAPRO JPK',
+        'program_version_kaper' => 'WAPRO Kaper',
+        'program_version_mag' => 'WAPRO Mag',
+        'program_version_mobile' => 'WAPRO Mobile',
+        'program_version_mobile-android' => 'WAPRO Mobile Android',
+        'program_version_wf-kaper-dos' => 'WF-KaPeR DOS',
+        'program_version_wf-mag-dos' => 'WF-MAG DOS',
+        'program_version_wf-fakir-dos' => 'WF-FaKir DOS'
+      ];
+
+      // Create new post
+      $new_post_id = wp_insert_post($args);
+      //program_version_analizy
+      // Add Umowa ID in the file data
+      update_field('field_5de2cf1a8e445',  $data['umowa_id'], 'post_' . $new_post_id);
+      // Add path to the file
+      update_field('field_5de2cf4d8e446',  $data['sciezka'], 'post_' . $new_post_id);
+      // Add password to the file
+      update_field('field_5de2cf948e447',  $data['haslo'], 'post_' . $new_post_id);
+      // Add program to the file data
+      update_field('field_5de2cfad8e448',  $data['program'], 'post_' . $new_post_id);
+      // Add program version to the file data
+      update_field('field_5de2cfbe8e449',  $data[array_search($data['program'], $programy)], 'post_' . $new_post_id);
+      // Add SQL version to the file data
+      update_field('field_5de2cfc58e44a',  $data['sql'], 'post_' . $new_post_id);
+      // Add description to the file data
+      update_field('field_5de2cfd08e44b',  $data['problem'], 'post_' . $new_post_id);
+      // Add attachment to the file data
+      if (count($_FILES['zalacznik']['name'])) {
+        $tmpFilePath = $_FILES['zalacznik']['tmp_name'];
+        // Make sure we have a filepath.
+        if ($tmpFilePath != "") {
+          // Setup our new file path.
+          $newFilePath = WP_CONTENT_DIR . '/uploads/wpcf7_uploads/' . prepareFileName($_FILES['zalacznik']['name']);
+          if (copy($tmpFilePath, $newFilePath)) {
+            update_field('field_5de2d0018e44c',  content_url() . '/uploads/wpcf7_uploads/' . prepareFileName($_FILES['zalacznik']['name']), 'post_' . $new_post_id);
+          }
+        }
+      }
+
+      $to = 'tomasz.stach@astosoft.pl';
+      $subject = 'TEST';
+      $headers[] = 'From: WAPRO ERP <kontakt@wapro.pl>';
+      $headers[] = 'Reply-To: sprzedaz.wapro@assecobs.pl';
+      $headers[] = 'Content-Type: text/html; charset=UTF-8';
+      $message = '<body bgcolor="#f7f5f5" style="background-color:#f7f5f5;">
+        <table border="0" cellspacing="0" cellpadding="0" align="center" width="600" bgcolor="#fff" style="width:600px; background-color:#fff;">
+          <tbody width="600" style="width:600px;">
+            <tr width="600" style="width:600px;">
+              <td colspan="3">
+                <table>
+                  <tr>
+                    <td width="200" style="width:200px;"><img BORDER="0" style="display:block; padding:0; margin:0;" src="http://www.assecobs.pl/storage/mail/stat/logo.png" alt="WAPRO ERP by Asseco" title="WAPRO ERP by Asseco" /></td>
+                    <td width="400" style="width:400px;">
+                      <table>
+                        <tr>
+                          <td width="360" align="right" style="width:360px; text-align:right; font-family:arial; font-size:14px; color:#000; text-decoration:none;">
+                            <a style="font-family:arial; font-size:14px; color:#000; text-decoration:none;" href="http://www.wapro.pl">WAPRO ERP</a> 
+                          </td>
+                          <td width="40" style="width:40px;"></td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+            <tr width="600" style="width:600px;">
+              <td colspan="3"><img BORDER="0" style="display:block; padding:0; margin:0;" src="http://www.assecobs.pl/storage/mail/stat/header-line.png" alt="" title="" /></td>
+            </tr>
+            <tr width="600" style="width:600px;">
+              <td width="40" style="width:40px;"></td>
+              <td width="520" style="width:580px;">
+                        
+      
+      <h2 style="font-family:Arial, Helvetica, Verdana, sans-serif;"> Szanowni Państwo! </h2>
+      
+      <p style="font-size:12px; text-align:justify; font-family:Arial, Helvetica, Verdana, sans-serif;">
+      Test!!!
+      </p>
+                <table border="0" cellspacing="0" cellpadding="0">
+                  <tr>
+                    <td style="height: 118px">
+                      <strong style="font-family:arial; font-size:14px;">
+                      <br>
+                      Pozdrawiamy</strong><br />
+                      <span style="font-family:arial; color:#da0d14; font-size:14px;">Zespół WAPRO ERP</span>
+      
+                      <p style="font-family:arial; font-size:14px;margin-bottom:20px;">
+                        Asseco Business Solutions S.A.<br />
+                        Oddział w Warszawie<br />
+                        ul. Adama Branickiego 13<br />
+                        <a style="font-family:arial; color:#da0d14; font-size:14px; text-decoration:underline;" href="http://wapro.pl">wapro.pl</a>
+      
+                      </p>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+              <td width="40" style="width:40px;"></td>
+            </tr>
+          </tbody>
+        </table>
+      </body>';
+
+      wp_mail($to, $subject, $message, $headers);
     }
   }
 }
@@ -1325,6 +1485,12 @@ function api_callings_scripts()
   wp_localize_script('rejestracja', 'RejestracjaSettings', [
     'nonce' => wp_create_nonce('wp_rest'),
   ]);
+
+  wp_enqueue_script('umowa-serwisowa', get_template_directory_uri() . '/custom/umowa-serwisowa.js', ['jquery'], NULL, TRUE);
+  // Pass nonce to JS.
+  wp_localize_script('umowa-serwisowa', 'UmowaSerwisowaSettings', [
+    'nonce' => wp_create_nonce('wp_rest'),
+  ]);
 }
 add_action('wp_enqueue_scripts', 'api_callings_scripts');
 
@@ -1338,4 +1504,29 @@ function randomPassword()
     $pass[] = $alphabet[$n];
   }
   return implode($pass);
+}
+
+function prepareFileName($filename): string
+{
+  setlocale(LC_ALL, "en_US.utf8");
+  $filename = iconv("utf-8", "ascii//TRANSLIT", $filename);
+  $filename = strtolower($filename);
+  $filename = preg_replace('/[\(\)\[\]\/]/', '', $filename);
+  $filename = preg_replace('/[\s-]+/', '-', $filename);
+  $filename = trim($filename, '.-_');
+
+  return $filename;
+}
+
+add_filter('site_option_active_sitewide_plugins', 'modify_sitewide_plugins');
+
+function modify_sitewide_plugins($value)
+{
+  global $current_blog;
+
+  //if( $current_blog->blog_id == 2 ) {
+  unset($value['custom-post-type-ui/custom-post-type-ui.php']);
+  //}
+
+  return $value;
 }
