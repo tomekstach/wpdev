@@ -27,7 +27,7 @@ private static function w3all_wp_logout(){
 	  	$phpbb_config = W3PHPBBCONFIG;
 	  	$phpbb_config = unserialize($phpbb_config);
 	    $w3cookie_domain = get_option('w3all_phpbb_cookie');
-	  	$phpbb_config_file = $w3all_config;
+	  	
 	  	$w3phpbb_conn = self::w3all_db_connect();
 	     	
         $k   = $phpbb_config["cookie_name"].'_k';
@@ -44,10 +44,10 @@ private static function w3all_wp_logout(){
  	           	 die( "Please clean up cookies on your browser." );
  	            }     
  	if( !empty($s_id) && !empty($u_id) ){
-   $w3phpbb_conn->query("DELETE FROM ".$phpbb_config_file["table_prefix"]."sessions WHERE session_id = '$s_id' AND session_user_id = '$u_id' OR session_user_id = '$u_id' AND session_browser = '$useragent'");
+   $w3phpbb_conn->query("DELETE FROM ".$w3all_config["table_prefix"]."sessions WHERE session_id = '$s_id' AND session_user_id = '$u_id' OR session_user_id = '$u_id' AND session_browser = '$useragent'");
   }
   if( !empty($k_md5) && !empty($u_id) ){
-   $w3phpbb_conn->query("DELETE FROM ".$phpbb_config_file["table_prefix"]."sessions_keys WHERE key_id = '$k_md5' AND user_id = '$u_id'");
+   $w3phpbb_conn->query("DELETE FROM ".$w3all_config["table_prefix"]."sessions_keys WHERE key_id = '$k_md5' AND user_id = '$u_id'");
   }
    	// remove phpBB cookies 
  	    setcookie ("$k", "", time() - 31622400, "/");
@@ -90,7 +90,7 @@ private static function w3all_get_phpbb_config(){
     $w3db_conn = self::w3all_db_connect();
 
    $a = $w3db_conn->get_results("SELECT * FROM ". $w3all_config["table_prefix"] ."config WHERE config_name IN('allow_autologin','avatar_gallery_path','avatar_path','avatar_salt','cookie_domain','cookie_name','default_dateformat','default_lang','max_autologin_time','rand_seed','rand_seed_last_update','script_path','session_length','version') ORDER BY config_name ASC");
-
+    if(empty($a)){ return array(); }
       // Order is alphabetical 
       $res = array( 'allow_autologin' => $a[0]->config_value,
                     'avatar_gallery_path'     => $a[1]->config_value,
@@ -107,15 +107,11 @@ private static function w3all_get_phpbb_config(){
                     'session_length'  => $a[12]->config_value,
                     'version'  => $a[13]->config_value
                   );
-                  
-      if( empty($res) OR ! $res ){
-      	return;
-      }
 
-if( $res["cookie_domain"] != $w3cookie_domain ){
+ if( $res["cookie_domain"] != $w3cookie_domain ){
 	$up = $res["cookie_domain"];
 	update_option( 'w3all_phpbb_cookie', $up );
-}
+ }
    
 // unlink wp uid1 and phpBB uid2 install admins if needed
 if(get_option('w3all_exclude_id1') == 1){
@@ -125,16 +121,13 @@ if ( $current_user->ID == 1 && !defined("WPW3ALL_NOT_ULINKED") OR isset($_COOKIE
  define('WPW3ALL_NOT_ULINKED', true);
 }
 }   
-                  
-    $res_d = serialize($res); // to pass array into define prior php7
-    define( "W3PHPBBCONFIG", $res_d );
-	       
+    define( "W3PHPBBCONFIG", serialize($res) ); // to pass array into define prior php7
 	return $res;
 }
 
 private static function verify_phpbb_credentials(){
            global $w3all_config, $wpdb, $w3all_phpbb_lang_switch_yn, $useragent, $w3all_profile_sync_bp_yn, $w3all_phpbb_mchat_get_opt_yn;
-           $config = $w3all_config;
+        	 if (!defined("W3PHPBBCONFIG")){ return; }
         	 $phpbb_config = unserialize(W3PHPBBCONFIG);
         	 $w3db_conn = self::w3all_db_connect();
 
@@ -149,14 +142,11 @@ private static function verify_phpbb_credentials(){
    
           // HERE INSIDE WE ARE SECURE //
          $_COOKIE[$u] = (isset($_COOKIE[$u])) ? $_COOKIE[$u] : 1;
-         $_COOKIE[$sid] = (isset($_COOKIE[$sid])) ? $_COOKIE[$sid] : ''; 
+         $_COOKIE[$sid] = (isset($_COOKIE[$sid])) ? $_COOKIE[$sid] : '';
+         $_COOKIE[$k] = (isset($_COOKIE[$k])) ? $_COOKIE[$k] : '';  
       
  	     if ( $_COOKIE[$u] > 1 ){ // phpBB: uid 1 guest, uid 2 default install admin
- 	      
- 	        if ( !isset($_COOKIE[$k]) ){ $_COOKIE[$k] = ''; }
- 	        	
  	           if ( preg_match('/[^0-9A-Za-z]/',$_COOKIE[$k]) OR preg_match('/[^0-9A-Za-z]/',$_COOKIE[$sid]) OR preg_match('/[^0-9]/',$_COOKIE[$u]) ){
- 	           	
                 die( "Clean up cookie on your browser please." );
  	            }
  	            
@@ -164,66 +154,142 @@ private static function verify_phpbb_credentials(){
  	           $phpbb_sid = $_COOKIE[$sid];
  	           $phpbb_u   = $_COOKIE[$u];
 
- 	         // group id:  1=anonimous; 5=admin; 6=bots; 
          	 // user_type: 1=not active accounts: confirmation email, deactivated (and i presume coppa?)
-    
+
 if ( empty( $phpbb_k ) ){ // it is not a remember login
  	 
   $phpbb_user_session = $w3db_conn->get_results("SELECT *  
-    FROM ". $config["table_prefix"] ."users  
-    JOIN ". $config["table_prefix"] ."sessions ON ". $config["table_prefix"] ."sessions.session_id =  '".$phpbb_sid."'   
-     AND ". $config["table_prefix"] ."sessions.session_user_id = ". $config["table_prefix"] ."users.user_id 
-     AND ". $config["table_prefix"] ."sessions.session_user_id = '".$phpbb_u."' 
-     AND ". $config["table_prefix"] ."sessions.session_browser = '".$useragent."' 
-    JOIN ". $config["table_prefix"] ."groups ON ". $config["table_prefix"] ."groups.group_id = ". $config["table_prefix"] ."users.group_id 
-      LEFT JOIN ". $config["table_prefix"] ."profile_fields_data ON ". $config["table_prefix"] ."profile_fields_data.user_id = ". $config["table_prefix"] ."sessions.session_user_id
-      LEFT JOIN ". $config["table_prefix"] ."banlist ON ". $config["table_prefix"] ."banlist.ban_userid = ". $config["table_prefix"] ."users.user_id
-      GROUP BY ". $config["table_prefix"] ."users.user_id");
+    FROM ". $w3all_config["table_prefix"] ."users  
+    JOIN ". $w3all_config["table_prefix"] ."sessions ON ". $w3all_config["table_prefix"] ."sessions.session_id =  '".$phpbb_sid."'   
+     AND ". $w3all_config["table_prefix"] ."sessions.session_user_id = ". $config["table_prefix"] ."users.user_id 
+     AND ". $w3all_config["table_prefix"] ."sessions.session_user_id = '".$phpbb_u."' 
+     AND ". $w3all_config["table_prefix"] ."sessions.session_browser = '".$useragent."' 
+    JOIN ". $w3all_config["table_prefix"] ."groups ON ". $w3all_config["table_prefix"] ."groups.group_id = ". $w3all_config["table_prefix"] ."users.group_id 
+      LEFT JOIN ". $w3all_config["table_prefix"] ."profile_fields_data ON ". $w3all_config["table_prefix"] ."profile_fields_data.user_id = ". $w3all_config["table_prefix"] ."sessions.session_user_id
+      LEFT JOIN ". $w3all_config["table_prefix"] ."banlist ON ". $w3all_config["table_prefix"] ."banlist.ban_userid = ". $w3all_config["table_prefix"] ."users.user_id
+      GROUP BY ". $w3all_config["table_prefix"] ."users.user_id");
    
   } else { // remember me auto login
        	
  $phpbb_user_session = $w3db_conn->get_results("SELECT *  
-    FROM ". $config["table_prefix"] ."users  
-    JOIN ". $config["table_prefix"] ."sessions_keys ON ". $config["table_prefix"] ."sessions_keys.key_id = '".md5($phpbb_k)."' 
-     AND ". $config["table_prefix"] ."users.user_id = ". $config["table_prefix"] ."sessions_keys.user_id 
-      LEFT JOIN ". $config["table_prefix"] ."sessions ON ". $config["table_prefix"] ."sessions.session_user_id = ". $config["table_prefix"] ."sessions_keys.user_id 
-     AND ". $config["table_prefix"] ."sessions.session_browser = '".$useragent."' 
-      LEFT JOIN ". $config["table_prefix"] ."groups ON ". $config["table_prefix"] ."groups.group_id = ". $config["table_prefix"] ."users.group_id 
-      LEFT JOIN ". $config["table_prefix"] ."profile_fields_data ON ". $config["table_prefix"] ."profile_fields_data.user_id = ". $config["table_prefix"] ."sessions_keys.user_id
-      LEFT JOIN ". $config["table_prefix"] ."banlist ON ". $config["table_prefix"] ."banlist.ban_userid = ". $config["table_prefix"] ."users.user_id
-      GROUP BY ". $config["table_prefix"] ."users.user_id");               
+    FROM ". $w3all_config["table_prefix"] ."users  
+    JOIN ". $w3all_config["table_prefix"] ."sessions_keys ON ". $w3all_config["table_prefix"] ."sessions_keys.key_id = '".md5($phpbb_k)."' 
+     AND ". $w3all_config["table_prefix"] ."users.user_id = ". $w3all_config["table_prefix"] ."sessions_keys.user_id 
+    LEFT JOIN ". $w3all_config["table_prefix"] ."sessions ON ". $w3all_config["table_prefix"] ."sessions.session_user_id = ". $w3all_config["table_prefix"] ."sessions_keys.user_id 
+     AND ". $w3all_config["table_prefix"] ."sessions.session_id = '".$phpbb_sid."'
+     AND ". $w3all_config["table_prefix"] ."sessions.session_browser = '".$useragent."'  
+      LEFT JOIN ". $w3all_config["table_prefix"] ."groups ON ". $w3all_config["table_prefix"] ."groups.group_id = ". $w3all_config["table_prefix"] ."users.group_id 
+      LEFT JOIN ". $w3all_config["table_prefix"] ."profile_fields_data ON ". $w3all_config["table_prefix"] ."profile_fields_data.user_id = ". $w3all_config["table_prefix"] ."sessions_keys.user_id
+      LEFT JOIN ". $w3all_config["table_prefix"] ."banlist ON ". $w3all_config["table_prefix"] ."banlist.ban_userid = ". $w3all_config["table_prefix"] ."users.user_id
+      GROUP BY ". $w3all_config["table_prefix"] ."users.user_id");               
   } 
+
+/*
+if($w3all_phpbb_mchat_get_opt_yn == 0){
+// this switch is actually only for // if($w3all_phpbb_mchat_get_opt_yn == 0){
+// but can be used/activated for any other phpBB acl_options scope, see more below
+ $phpbb_user_session = $w3db_conn->get_results("SELECT *  
+    FROM ". $w3all_config["table_prefix"] ."users  
+    JOIN ". $w3all_config["table_prefix"] ."sessions ON ". $w3all_config["table_prefix"] ."sessions.session_id =  '".$phpbb_sid."'
+     AND ". $w3all_config["table_prefix"] ."sessions.session_user_id = ". $w3all_config["table_prefix"] ."users.user_id 
+     AND ". $w3all_config["table_prefix"] ."sessions.session_user_id = '".$phpbb_u."' 
+     AND ". $w3all_config["table_prefix"] ."sessions.session_browser = '".$useragent."' 
+    JOIN ". $w3all_config["table_prefix"] ."groups ON ". $w3all_config["table_prefix"] ."groups.group_id = ". $w3all_config["table_prefix"] ."users.group_id 
+     LEFT JOIN ". $w3all_config["table_prefix"] ."sessions_keys ON ". $w3all_config["table_prefix"] ."sessions_keys.key_id = '".md5($phpbb_k)."' 
+     LEFT JOIN ". $w3all_config["table_prefix"] ."profile_fields_data ON ". $w3all_config["table_prefix"] ."profile_fields_data.user_id = ". $w3all_config["table_prefix"] ."sessions.session_user_id
+     LEFT JOIN ". $w3all_config["table_prefix"] ."banlist ON ". $w3all_config["table_prefix"] ."banlist.ban_userid = ". $w3all_config["table_prefix"] ."users.user_id
+    GROUP BY ". $w3all_config["table_prefix"] ."users.user_id");
+} else {
+  // array with all acl_options that belongs to this phpBB users Group
+    $phpbb_user_session = $w3db_conn->get_results("SELECT *  
+    FROM ". $w3all_config["table_prefix"] ."users  
+    JOIN ". $w3all_config["table_prefix"] ."sessions ON ". $w3all_config["table_prefix"] ."sessions.session_id =  '".$phpbb_sid."'
+     AND ". $w3all_config["table_prefix"] ."sessions.session_user_id = ". $w3all_config["table_prefix"] ."users.user_id 
+     AND ". $w3all_config["table_prefix"] ."sessions.session_user_id = '".$phpbb_u."' 
+     AND ". $w3all_config["table_prefix"] ."sessions.session_browser = '".$useragent."' 
+     JOIN ". $w3all_config["table_prefix"] ."groups ON ". $w3all_config["table_prefix"] ."groups.group_id = ". $w3all_config["table_prefix"] ."users.group_id 
+      LEFT JOIN ".$w3all_config["table_prefix"]."acl_groups ON ". $w3all_config["table_prefix"] ."acl_groups.group_id = ". $w3all_config["table_prefix"] ."users.group_id
+      LEFT JOIN ".$w3all_config["table_prefix"]."acl_options ON ". $w3all_config["table_prefix"] ."acl_options.auth_option_id = ". $w3all_config["table_prefix"] ."acl_groups.auth_option_id 
+     LEFT JOIN ". $w3all_config["table_prefix"] ."sessions_keys ON ". $w3all_config["table_prefix"] ."sessions_keys.key_id = '".md5($phpbb_k)."' 
+     LEFT JOIN ". $w3all_config["table_prefix"] ."profile_fields_data ON ". $w3all_config["table_prefix"] ."profile_fields_data.user_id = ". $w3all_config["table_prefix"] ."sessions.session_user_id
+     LEFT JOIN ". $w3all_config["table_prefix"] ."banlist ON ". $w3all_config["table_prefix"] ."banlist.ban_userid = ". $w3all_config["table_prefix"] ."users.user_id");
+ 
+ // you can't GROUP BY ". $w3all_config["table_prefix"] ."users.user_id"); into this so
+ // asking myself if the old way (separate query, see more below commented) is more fast than this:
+ 
+ // iterate into to check/assign user's capabilities
+ // there is no other (convenient) way (or i've not been able to) to do this
+ // is there a different more convenient way for you? let know!
+ 
+// NOTE NOTE NOTE
+ // 30/11/2019 About acl_options table that is not fullfilled until not applied on ACP: 
+ // Substantially to fill acl_options table:
+ // ACP -> TAB Users and Groups -> Group permissions -> Registered users -> Advanced Permissions
+ // Set a casual value for an option, for example Can attach files, THEN click into Apply All Permissions
+ // OK! now the table contain all needed Group auth_option_id values for this group
+ // Then reset the value of Can attach files as needed by clicking into Apply All Permissions again
+ // memo about acl_options: https://www.axew3.com/w3/forums/viewtopic.php?f=2&p=4182#p4182
+ 
+ // it is possible to add any other 'elseif' to check for this user the existance of any needed phpBB acl_options item, iterating values
+ // acl_options values will be so added into $phpbb_uc_ary, that can be after checked 
+ // there is no other way except 'elseif' to iterate this way adding into array all needed values
+ // may could be provided array() of all 'acl_options' to check against instead in place of elseif
+  foreach($phpbb_user_session as $k){
+   foreach($k as $kk => $v){
+  	 if($v == 'u_attach'){
+  	 	$phpbb_uc_ary[] = $v; // then can attach
+  	  } elseif($v == 'u_mchat_view'){
+  	 	$phpbb_uc_ary[] = $v; // then can see mchat
+  	  } elseif($v == 'u_mchat_use'){
+  	 	$phpbb_uc_ary[] = $v; // then can use mchat
+  	  } // add any other phpBB acl_option
+   }
+  }
+  
+ // to check for phpBB user capabilities like this:
+ // if(isset($phpbb_uc_ary) && in_array('u_attach',$phpbb_uc_ary)){
+     // The user can attach
+ // }
+  
+    if(isset($phpbb_uc_ary)){
+     $w3_phpbb_uc_ary = serialize($phpbb_uc_ary);
+   	 define("W3PHPBBUCAPABILITIES", $w3_phpbb_uc_ary);
+    }
+  
+} */
+// END if() else() $phpbb_user_session with acl_options OR not
   
   if ( empty( $phpbb_user_session ) OR $phpbb_user_session[0]->user_type == 1 OR $phpbb_user_session == 0 ){
    if ( is_user_logged_in() ) { 
   	 self::w3all_wp_logout();
   	}
   	return;
-  } 
+  }
   
- // assure this array will contain the user_id
- $phpbb_user_session[0]->user_id = (!empty($phpbb_user_session[0]->user_id)) ? $phpbb_user_session[0]->user_id : $phpbb_user_session[0]->session_user_id;
+ // assure this array will contain the user_id ... 
+ $phpbb_user_session[0]->user_id = (!empty($phpbb_user_session[0]->session_user_id)) ? $phpbb_user_session[0]->session_user_id : $phpbb_user_session[0]->user_id;
+
+   // THE FOLLOW is into above query now (vers 1.9.9): not sure if it was more efficient in this way
    // push users acl options into this array
    // i've try to unify this query with the above, but i've not (still) been able to
 if($w3all_phpbb_mchat_get_opt_yn > 0){ // actually load this only for mchat
 	$phpbb_user_capabilities = array();
-   $phpbb_u_aopts = $w3db_conn->get_results("SELECT * FROM ".$config["table_prefix"]."acl_options 
-    JOIN ".$config["table_prefix"]."acl_groups ON ". $config["table_prefix"] ."acl_groups.auth_option_id = ". $config["table_prefix"] ."acl_options.auth_option_id  
-    AND ". $config["table_prefix"] ."acl_groups.group_id = ". $phpbb_user_session[0]->group_id .""); 
-       // push into [1] array index due to GROUP BY above (so ever [0] to not broke all things)
+   $phpbb_u_aopts = $w3db_conn->get_results("SELECT * FROM ".$w3all_config["table_prefix"]."acl_options 
+    JOIN ".$w3all_config["table_prefix"]."acl_groups ON ". $w3all_config["table_prefix"] ."acl_groups.auth_option_id = ". $w3all_config["table_prefix"] ."acl_options.auth_option_id  
+    AND ". $w3all_config["table_prefix"] ."acl_groups.group_id = ". $phpbb_user_session[0]->group_id .""); 
   if (!empty($phpbb_u_aopts)){
    $phpbb_u_opts = array_column($phpbb_u_aopts, 'auth_option');
    if (in_array("u_mchat_view", $phpbb_u_opts)) { // check all about this user, adding 'auth_option' name check in_array here
     $phpbb_user_capabilities[] = "u_mchat_view";
    }
- // $phpbb_user_capabilities = serialize($phpbb_user_capabilities); 
- // define("W3PHPBBUSERCAPABILITIES", $phpbb_user_capabilities);
  } 
-} 	      
-  // push on index [1] phpBB users capabilities	
+}
+
   if(isset($phpbb_user_capabilities)){    
-   $phpbb_user_session[] = $phpbb_user_capabilities;
-  } 
+   //$phpbb_user_session[] = $phpbb_user_capabilities;
+   $phpbb_user_capabilities = serialize($phpbb_user_capabilities);
+   define("W3PHPBBUCAPABILITIES", $phpbb_user_capabilities);
+  }
    	      
    $w3_phpbb_user_session = serialize($phpbb_user_session);
    	define("W3PHPBBUSESSION", $w3_phpbb_user_session);
@@ -261,7 +327,7 @@ if($w3all_phpbb_mchat_get_opt_yn > 0){ // actually load this only for mchat
     
  if ( is_user_logged_in() ) { 
 
-   		$current_user = wp_get_current_user();
+   	  $current_user = wp_get_current_user();
       $wp_umeta = get_user_meta($current_user->ID, '', false);
 
 // #####################################################
@@ -532,17 +598,17 @@ $last_updated = date('Y-m-d H:i:s');
 
  	     	} else { // update
                      // last visit update
-   			 	           $w3db_conn->query("UPDATE ". $config["table_prefix"] ."sessions SET session_time = '".time()."' WHERE session_id = '$phpbb_sid' OR session_browser = '".$useragent ."' AND session_user_id = '".$phpbb_user_session[0]->user_id."'");
+   			 	           $w3db_conn->query("UPDATE ". $w3all_config["table_prefix"] ."sessions SET session_time = '".time()."' WHERE session_id = '$phpbb_sid' OR session_browser = '".$useragent ."' AND session_user_id = '".$phpbb_user_session[0]->user_id."'");
                       // last visit update also
                       // this has been removed and reverted to the old way.
                       // make the user resulting updated as online in phpBB also, while visiting wordpress and not phpBB, but cause the reset  
                       // of the phpBB "new posts" feature ex - ./search.php?search_id=newposts - will show nothing
                     /* 
-                     $w3db_conn->query("UPDATE ". $config["table_prefix"] ."users, ". $config["table_prefix"] ."sessions 
-                     SET ". $config["table_prefix"] ."users.user_lastvisit = '".time()."', ". $config["table_prefix"] ."sessions.session_time = '".time()."', ". $config["table_prefix"] ."sessions.session_last_visit = '".time()."' 
-                      WHERE ". $config["table_prefix"] ."users.user_id = '".$phpbb_user_session[0]->user_id."' 
-                     AND ". $config["table_prefix"] ."sessions.session_user_id = '".$phpbb_user_session[0]->user_id."'
-                     AND ". $config["table_prefix"] ."sessions.session_browser = '".$useragent."'");
+                     $w3db_conn->query("UPDATE ". $w3all_config["table_prefix"] ."users, ". $w3all_config["table_prefix"] ."sessions 
+                     SET ". $w3all_config["table_prefix"] ."users.user_lastvisit = '".time()."', ". $w3all_config["table_prefix"] ."sessions.session_time = '".time()."', ". $w3all_config["table_prefix"] ."sessions.session_last_visit = '".time()."' 
+                      WHERE ". $w3all_config["table_prefix"] ."users.user_id = '".$phpbb_user_session[0]->user_id."' 
+                     AND ". $w3all_config["table_prefix"] ."sessions.session_user_id = '".$phpbb_user_session[0]->user_id."'
+                     AND ". $w3all_config["table_prefix"] ."sessions.session_browser = '".$useragent."'");
                     */
                 // NOTE phpbb_update_profile do the update of same fields so if code changes are done here adding custom profile fields
                 // look also to change the function phpbb_update_profile( 
@@ -667,9 +733,9 @@ $last_updated = date('Y-m-d H:i:s');
            }
          }
          
-   if ( ! is_user_logged_in() && ! is_wp_error( $user_id ) ) {
+  if ( ! is_user_logged_in() && ! is_wp_error( $user_id ) ) {
     $uname = sanitize_user( $phpbb_user_session[0]->username, $strict = false );
-    $user = get_user_by( 'login', $uname ); // only by username here: an email can be changed into phpBB profile and still not updated in WP. TODO: change into user 'nicename' when all switched
+    $user = get_user_by( 'login', $uname );
     
    if($phpbb_user_session[0]->user_id == 2){ // switch default user admin
     	$user = get_user_by( 'ID', 1 );
@@ -677,12 +743,11 @@ $last_updated = date('Y-m-d H:i:s');
     
     if( !$user ) { return; }
     
-     	$remember = ( empty($phpbb_k) ) ? false : true;
-      $secure = is_ssl();
-       
-        self::phpBB_user_session_set($user);
+     	 $remember = ( empty($phpbb_k) ) ? false : true;
+
+       //self::phpBB_user_session_set($user); // since there is a phpBB cookie presented, should not be necessary to set it up here!
         wp_set_current_user( $user->ID, $user->user_login );
-        wp_set_auth_cookie( $user->ID, $remember, $secure );
+        wp_set_auth_cookie( $user->ID, $remember, is_ssl() );
         do_action( 'wp_login', $user->user_login, $user );
 	  
 // START w3all redirect to phpBB (user redirected onlogin by snippet added into phpBB, to add user in WP)
@@ -694,7 +759,8 @@ $last_updated = date('Y-m-d H:i:s');
      	 exit;
      }
 
-  if (isset($ins_coming_phpbbU) OR !strstr($_SERVER['REQUEST_URI'], 'wp-admin') OR !strstr($_SERVER['SCRIPT_NAME'], 'profile.php')){
+  //if (isset($ins_coming_phpbbU) OR !strstr($_SERVER['REQUEST_URI'], 'wp-admin') OR !strstr($_SERVER['SCRIPT_NAME'], 'profile.php')){
+  if ( !strstr($_SERVER['REQUEST_URI'], 'wp-admin') OR !strstr($_SERVER['SCRIPT_NAME'], 'profile.php') ){
 		if( isset( $_REQUEST['redirect_to'] ) ){
 			wp_redirect($_REQUEST['redirect_to']); exit;
 		} else {
@@ -732,7 +798,7 @@ $last_updated = date('Y-m-d H:i:s');
   wp_redirect(home_url());
 	exit(); 
     
-    }
+ }
    
     return;
 
@@ -932,7 +998,6 @@ AND ".$w3all_config["table_prefix"]."acl_groups.group_id = ".$ug."
 
 private static function phpBB_user_session_set($wp_user_data){
 	      global $w3all_config,$wpdb,$useragent;
-       $phpbb_config_file = $w3all_config;
        
       if(!defined("W3PHPBBCONFIG")){
        	$phpbb_config = self::w3all_get_phpbb_config();
@@ -954,7 +1019,7 @@ private static function phpBB_user_session_set($wp_user_data){
      if( $wp_user_data->ID == 1 ){ // switch admin
          	$phpbb_user_id = 2;
        } else { 
-               $phpbb_u = $w3phpbb_conn->get_row("SELECT * FROM ".$phpbb_config_file["table_prefix"]."users WHERE username = '$wp_user_data->user_login'");
+               $phpbb_u = $w3phpbb_conn->get_row("SELECT * FROM ".$w3all_config["table_prefix"]."users WHERE username = '$wp_user_data->user_login'");
           if( empty($phpbb_u) ){ return; }
     
         if( self::w3_phpbb_ban($phpbb_u) === true ){
@@ -981,16 +1046,16 @@ private static function phpBB_user_session_set($wp_user_data){
        $phpbb_config["rand_seed"] = md5( $phpbb_config["rand_seed"] . $val . rand() ); // the rand seed to be updated
        $phpbb_rand_seed = $phpbb_config["rand_seed"];
        
-        $w3phpbb_conn->query("UPDATE ".$phpbb_config_file["table_prefix"]."config SET config_value = '$phpbb_rand_seed' WHERE config_name = 'rand_seed'");
-        $w3phpbb_conn->query("UPDATE ".$phpbb_config_file["table_prefix"]."config SET config_value = '$time' WHERE config_name = 'rand_seed_last_update'");
+        $w3phpbb_conn->query("UPDATE ".$w3all_config["table_prefix"]."config SET config_value = '$phpbb_rand_seed' WHERE config_name = 'rand_seed'");
+        $w3phpbb_conn->query("UPDATE ".$w3all_config["table_prefix"]."config SET config_value = '$time' WHERE config_name = 'rand_seed_last_update'");
         $w3_unique_id = substr($val, 4, 16); 
         $w3session_id = md5($w3_unique_id);
      
-  //   $w3phpbb_conn->query("UPDATE ".$phpbb_config_file["table_prefix"]."users SET user_form_salt = '$val' WHERE user_id = '$user_id'");
+  //   $w3phpbb_conn->query("UPDATE ".$w3all_config["table_prefix"]."users SET user_form_salt = '$val' WHERE user_id = '$user_id'");
    
         $uip = (!empty($_SERVER['REMOTE_ADDR'])) ? $_SERVER['REMOTE_ADDR'] : '127.0.0.1';
         $auto_login = 1; 
-           $w3phpbb_conn->query("INSERT INTO ".$phpbb_config_file["table_prefix"]."sessions (session_id, session_user_id, session_last_visit, session_start, session_time, session_ip, session_browser, session_forwarded_for, session_page, session_viewonline, session_autologin, session_admin, session_forum_id) 
+           $w3phpbb_conn->query("INSERT INTO ".$w3all_config["table_prefix"]."sessions (session_id, session_user_id, session_last_visit, session_start, session_time, session_ip, session_browser, session_forwarded_for, session_page, session_viewonline, session_autologin, session_admin, session_forum_id) 
           VALUES ('$w3session_id', '$phpbb_user_id', '$time', '$time', '$time', '$uip', '$useragent', '', 'index.php', '1', '$auto_login', '0', '0')");
  
      // $key_id = unique_id(hexdec(substr($this->session_id, 0, 8))); // phpBB
@@ -998,22 +1063,28 @@ private static function phpBB_user_session_set($wp_user_data){
       $key_id = hexdec(substr($w3session_id, 0, 8));
       $valk = $phpbb_config["rand_seed"] . microtime() . $key_id;
       $valk = md5($valk);
-      $key_id_k  = substr($valk, 4, 16); // to k
+      
+      // 20 to 32 rand string
+      $valplus = strtolower( str_shuffle(md5(time()) . '1a2b3c4d5efghilmnopqrstuvzwxW6X7K8A9B0CDEFGHILMNOPQRSTU3V2Z1') );
+      $key_id_k  = str_shuffle(substr($valk, rand(1,10), 16) . substr($valplus, rand(1,10), rand(4,16))); // to k
+      //$key_id_k  = substr($valk, 4, 16); // to k
       $key_id_sk = md5($key_id_k); // to sessions_keys
 
-         $w3phpbb_conn->query("INSERT INTO ".$phpbb_config_file["table_prefix"]."sessions_keys (key_id, user_id, last_ip, last_login) 
+         $w3phpbb_conn->query("INSERT INTO ".$w3all_config["table_prefix"]."sessions_keys (key_id, user_id, last_ip, last_login) 
           VALUES ('$key_id_sk', '$phpbb_user_id', '$uip', '$time')");
 
-	    $cookie_expire = $time + (($phpbb_config['max_autologin_time']) ? 86400 * (int) $phpbb_config['max_autologin_time'] : 31536000);
-
+      $expired1year = time() - 31536000; // clean up session_keys older than 356 gg
+      $w3phpbb_conn->query("DELETE FROM ".$w3all_config["table_prefix"]."sessions_keys WHERE last_login < '$expired1year' AND user_id = '$phpbb_user_id'");
+ 
+	    $cookie_expire = $phpbb_config['max_autologin_time'] > 0 ? time() + (86400 * (int) $phpbb_config['max_autologin_time']) : time() + 31536000;
       $secure = is_ssl();
       if(empty($w3cookie_domain)){
       	$w3cookie_domain = 'localhost';
       }
+      
 	    setcookie ("$k", "$key_id_k", $cookie_expire, "/", $w3cookie_domain, $secure);
  	    setcookie ("$sid", "$w3session_id", $cookie_expire, "/", $w3cookie_domain, $secure); 
- 	    setcookie ("$u", "$phpbb_user_id", $cookie_expire, "/", $w3cookie_domain, $secure);  
-    //  wp_set_current_user( $wp_user_data->ID, $wp_user_data->user_login );
+ 	    setcookie ("$u", "$phpbb_user_id", $cookie_expire, "/", $w3cookie_domain, $secure);
 }
 
 public static function w3_phpbb_ban($phpbb_u = '', $uname = '', $uemail = ''){
@@ -1049,8 +1120,6 @@ foreach($ed as $e){
 	$ued .= $e . '.'; // .domain.com
 }}
 $ued = substr($ued, 0, -1);
-
-//$etype = substr_count($uemail_domain, '.');  // 1 -> domain email (*@mail.com) // > 1 subdomain (*@*.domain.tld)
  
  $phpbb_banl = $w3phpbb_conn->get_results("SELECT * FROM ".$w3all_config["table_prefix"]."banlist WHERE ban_userid = '0'", ARRAY_A);
 
@@ -1099,13 +1168,8 @@ private static function create_phpBB_user($wpu){
    
    // temp fix added also on
    // private static function create_phpBB_user_wpms($username = '', $user_email = '', $key = '', $meta = ''){
-   // get info about phpBB group where the user need to added: this should may be added on query where W3PHPBBCONFIG is defined
-  
-   /*$phpbb_group = $w3phpbb_conn->get_row("SELECT * FROM ".$w3all_config["table_prefix"]."groups WHERE group_id = '$w3all_add_into_spec_group'");
-   	if( empty($phpbb_group) OR ! $phpbb_group ){
-    $group_color = '';
-   } else { $group_color = $phpbb_group->group_colour; }
-   */
+   // get info about phpBB group where the user need to be added: this should may be added on query where W3PHPBBCONFIG is defined
+
   $phpbb_group = $w3phpbb_conn->get_results("SELECT * FROM ".$w3all_config["table_prefix"]."ranks
    RIGHT JOIN ".$w3all_config["table_prefix"]."groups ON ".$w3all_config["table_prefix"]."groups.group_rank = ".$w3all_config["table_prefix"]."ranks.rank_id
    AND ".$w3all_config["table_prefix"]."ranks.rank_min = '0'
@@ -1141,22 +1205,6 @@ if ( empty($urank_id_a['rank_id']) ){
 
 } // END if(!empty($phpbb_group) OR ! $phpbb_group){    
 else { 	$rankID = 0; $group_color = ''; }
-
-  /* if($w3all_phpbb_lang_switch_yn == 1){
-   		if(strlen(get_locale()) == 0){ // wp lang for this user ISO 639-1 Code. en_EN // en = Lang code _ EN = Country code
-   		   $wp_lang_x_phpbb = 'en'; // no lang setting, assume en by default
-   			} else { 
-   				if( strlen(get_locale()) == 2 ){ $wp_lang_x_phpbb = strtolower(get_locale()); 
-   		  	} else {
-   		      $wp_lang_x_phpbb = substr(get_locale(), 0, strpos(get_locale(), '_')); // should extract Lang code ISO Code phpBB suitable for this lang
-   		     }
-   				   //$wp_lang_x_phpbb = strtolower(substr($wp_lang, 0, strpos($wp_lang, '_'))); // should extract Lang code ISO Code that is phpBB suitable for this lang
-   				}
-   				
-   				// switch for different languages notations
-   				if( $wp_lang_x_phpbb == 'ps' ){ $wp_lang_x_phpbb = 'fa'; // persian
-   					 }
-     } */
 
   if(!isset($default_lang) OR empty($default_lang)){ $wp_lang_x_phpbb = 'en'; }
   else { $wp_lang_x_phpbb = $default_lang; }
@@ -1218,8 +1266,6 @@ else { 	$rankID = 0; $group_color = ''; }
      
      $w3phpbb_conn->query("UPDATE ".$w3all_config["table_prefix"]."config SET config_value = '$wpul' WHERE config_name = 'newest_username'");
      $w3phpbb_conn->query("UPDATE ".$w3all_config["table_prefix"]."config SET config_value = '$uid' WHERE config_name = 'newest_user_id'");
-
-    // define( "W3PHPBBCREATEDUSER", true); // this is for the phpbb_update_profile function fired after this
  
  }
 
@@ -1229,10 +1275,9 @@ else { 	$rankID = 0; $group_color = ''; }
 public static function phpBB_user_check( $sanitized_user_login, $user_email, $is_admin_action = 1 ){
 
 	      global $w3all_config;
-        $phpbb_config_file = $w3all_config;
+        
 	      $w3phpbb_conn = self::w3all_db_connect();
-        //$phpbb_config = self::get_phpbb_config();
-         
+   
       if(!defined("W3PHPBBCONFIG")){
        	$phpbb_config = self::w3all_get_phpbb_config();
        } else {
@@ -1251,7 +1296,7 @@ public static function phpBB_user_check( $sanitized_user_login, $user_email, $is
  	      $user_email_hash = self::w3all_phpbb_email_hash($user_email);
  	      
  	     if( $is_admin_action == 1 ){
- 	     	         $phpbb_any = $w3phpbb_conn->get_row("SELECT username, user_email FROM ".$phpbb_config_file["table_prefix"]."users WHERE user_email_hash = '$user_email_hash' OR username = '$sanitized_user_login'");
+ 	     	         $phpbb_any = $w3phpbb_conn->get_row("SELECT username, user_email FROM ".$w3all_config["table_prefix"]."users WHERE user_email_hash = '$user_email_hash' OR username = '$sanitized_user_login'");
          if ( null !== $phpbb_any ) {
            return true;
  	       }
@@ -1260,7 +1305,7 @@ public static function phpBB_user_check( $sanitized_user_login, $user_email, $is
  	     	  $_COOKIE[$u] = (isset($_COOKIE[$u])) ? $_COOKIE[$u] : '';
  	     	  
  	        if ( $_COOKIE["$u"] < 2 && $is_admin_action == 0 ){ // check only for phpBB user that come as NOT logged in - or get 'undefined wp_delete' error
-         $phpbb_any = $w3phpbb_conn->get_row("SELECT username, user_email FROM ".$phpbb_config_file["table_prefix"]."users WHERE user_email_hash = '$user_email_hash' OR username = '$sanitized_user_login'");
+         $phpbb_any = $w3phpbb_conn->get_row("SELECT username, user_email FROM ".$w3all_config["table_prefix"]."users WHERE user_email_hash = '$user_email_hash' OR username = '$sanitized_user_login'");
        if ( null !== $phpbb_any ) {
         return true;
      }
@@ -1298,7 +1343,7 @@ if ( is_user_logged_in() ) {
 public static function check_phpbb_passw_match_on_wp_auth ( $username, $is_phpbb_admin = 0 ) {
   
      global $wpdb, $w3all_config;
-     $phpbb_config_file = $w3all_config;
+     $wpu_db_utab = (is_multisite()) ? WPW3ALL_MAIN_DBPREFIX . 'users' : $wpdb->prefix . 'users';
      
    if( empty($username) ){ return; }
 
@@ -1308,12 +1353,10 @@ public static function check_phpbb_passw_match_on_wp_auth ( $username, $is_phpbb
       
       if( $is_phpbb_admin == 1 ){ // wp default install admin
 
-      $phpbb_pae = $w3phpbb_conn->get_row("SELECT user_password, user_email FROM ".$phpbb_config_file["table_prefix"]."users WHERE user_id = '2'");
+      $phpbb_pae = $w3phpbb_conn->get_row("SELECT user_password, user_email FROM ".$w3all_config["table_prefix"]."users WHERE user_id = '2'");
 
 	     if( $phpbb_pae->user_password != $wpu->user_pass && !empty($phpbb_pae->user_password) ){
 	
-	     $wpu_db_utab = (is_multisite()) ? WPW3ALL_MAIN_DBPREFIX . 'users' : $wpdb->prefix . 'users';
-  
 	        $wpdb->query("UPDATE $wpu_db_utab SET user_pass = '$phpbb_pae->user_password' WHERE ID = '1'");
         
         return $phpbb_pae->user_password;
@@ -1321,15 +1364,12 @@ public static function check_phpbb_passw_match_on_wp_auth ( $username, $is_phpbb
   }
  
     if( $is_phpbb_admin == 0 ){ // passw change for all others
-
-       	  $wpu_db_utab = (is_multisite()) ? WPW3ALL_MAIN_DBPREFIX . 'users' : $wpdb->prefix . 'users';
-  
-     $phpbb_pae = $w3phpbb_conn->get_row("SELECT user_password, user_email FROM ".$phpbb_config_file["table_prefix"]."users WHERE username = '$wpu->user_login'");
+ 
+     $phpbb_pae = $w3phpbb_conn->get_row("SELECT user_password, user_email FROM ".$w3all_config["table_prefix"]."users WHERE username = '$wpu->user_login'");
 
 // do not check if user isn't created in phpBB (empty result) may due to the fact in MUMS the sub-admin have not link his sub-site to the forum in wp_w3all config
 	     if( !empty($phpbb_pae) && $phpbb_pae->user_password != $wpu->user_pass && !empty($phpbb_pae->user_password) ){
 
-	       $wpu_db_utab = (is_multisite()) ? WPW3ALL_MAIN_DBPREFIX . 'users' : $wpdb->prefix . 'users';
 	        $wpdb->query("UPDATE $wpu_db_utab SET user_pass = '$phpbb_pae->user_password' WHERE user_login = '$wpu->user_login'");
 
         return $phpbb_pae->user_password;
@@ -1343,9 +1383,7 @@ public static function check_phpbb_passw_match_on_wp_auth ( $username, $is_phpbb
 
 public static function wp_w3all_phpbb_logout() {
 	 global $w3all_config,$w3cookie_domain,$useragent;
-      $phpbb_config_file = $w3all_config;
   	  $w3phpbb_conn = self::w3all_db_connect();
-	  	//$phpbb_config = self::get_phpbb_config();
 	  	$phpbb_config = unserialize(W3PHPBBCONFIG);
         	  	
         $k   = $phpbb_config["cookie_name"].'_k';
@@ -1362,8 +1400,8 @@ public static function wp_w3all_phpbb_logout() {
  	 $s_id = $_COOKIE[$sid];
 
     // logout phpBB user
-    $w3phpbb_conn->query("DELETE FROM ".$phpbb_config_file["table_prefix"]."sessions WHERE session_id = '$s_id' AND session_user_id = '$u_id' OR session_user_id = '$u_id' AND session_browser = '$useragent'");
-    $w3phpbb_conn->query("DELETE FROM ".$phpbb_config_file["table_prefix"]."sessions_keys WHERE key_id = '$k_md5' AND user_id = '$u_id'");
+    $w3phpbb_conn->query("DELETE FROM ".$w3all_config["table_prefix"]."sessions WHERE session_id = '$s_id' AND session_user_id = '$u_id' OR session_user_id = '$u_id' AND session_browser = '$useragent'");
+    $w3phpbb_conn->query("DELETE FROM ".$w3all_config["table_prefix"]."sessions_keys WHERE key_id = '$k_md5' AND user_id = '$u_id'");
   
  	// remove phpBB cookies
    
@@ -1384,7 +1422,6 @@ public static function phpbb_pass_update($user, $new_pass) {
 
      	 global $w3all_config,$wpdb;
      
-     $phpbb_config_file = $w3all_config;
      $w3phpbb_conn = self::wp_w3all_phpbb_conn_init();
 
         	$wpu_db_utab = (is_multisite()) ? WPW3ALL_MAIN_DBPREFIX . 'users' : $wpdb->prefix . 'users';
@@ -1394,9 +1431,9 @@ public static function phpbb_pass_update($user, $new_pass) {
 
     if ( $user->ID == 1 ){ // update phpBB admin uid2
       	
-       $w3phpbb_conn->query("UPDATE ".$phpbb_config_file["table_prefix"]."users SET user_password = '$ud->user_pass' WHERE	user_id = '2'");
+       $w3phpbb_conn->query("UPDATE ".$w3all_config["table_prefix"]."users SET user_password = '$ud->user_pass' WHERE	user_id = '2'");
      // should reset any session here
-     // $w3phpbb_conn->query("DELETE ".$phpbb_config_file["table_prefix"]."sessions, ".$phpbb_config_file["table_prefix"]."sessions_keys FROM ".$phpbb_config_file["table_prefix"]."sessions INNER JOIN ".$phpbb_config_file["table_prefix"]."sessions_keys.....   ");
+     // $w3phpbb_conn->query("DELETE ".$w3all_config["table_prefix"]."sessions, ".$w3all_config["table_prefix"]."sessions_keys FROM ".$w3all_config["table_prefix"]."sessions INNER JOIN ".$w3all_config["table_prefix"]."sessions_keys.....   ");
 
 
       } else { 
@@ -1404,9 +1441,9 @@ public static function phpbb_pass_update($user, $new_pass) {
        $user_email_hash = self::w3all_phpbb_email_hash($ud->user_email);
        // $ulogin = esc_sql($user->user_login);
 
-       $w3phpbb_conn->query("UPDATE ".$phpbb_config_file["table_prefix"]."users SET user_password = '$ud->user_pass' WHERE 	user_email_hash = '".$user_email_hash."' OR username = '".$user->user_login."'");
+       $w3phpbb_conn->query("UPDATE ".$w3all_config["table_prefix"]."users SET user_password = '$ud->user_pass' WHERE user_email_hash = '".$user_email_hash."' OR username = '".$user->user_login."'");
      //  should reset any session here
-	   //  $w3phpbb_conn->query("DELETE ".$phpbb_config_file["table_prefix"]."sessions, ".$phpbb_config_file["table_prefix"]."sessions_keys FROM ".$phpbb_config_file["table_prefix"]."sessions INNER JOIN ".$phpbb_config_file["table_prefix"]."sessions_keys.....   ");
+	   //  $w3phpbb_conn->query("DELETE ".$w3all_config["table_prefix"]."sessions, ".$w3all_config["table_prefix"]."sessions_keys FROM ".$w3all_config["table_prefix"]."sessions INNER JOIN ".$w3all_config["table_prefix"]."sessions_keys.....   ");
    
      } 
 
@@ -1415,14 +1452,12 @@ public static function phpbb_pass_update($user, $new_pass) {
  public static function phpbb_update_profile($user_id, $old_user_data) { // changed from 1.7.6
 
   // AstoSoft
-   global $wpdb,$w3all_config,$w3all_phpbb_lang_switch_yn,$w3all_add_into_spec_group;
-  
-     $phpbb_config_file = $w3all_config;
+  global $wpdb,$w3all_config,$w3all_phpbb_lang_switch_yn,$w3all_add_into_spec_group;
+
      $w3phpbb_conn = self::wp_w3all_phpbb_conn_init();
      $phpbb_config = unserialize(W3PHPBBCONFIG);
 
      $phpbb_version = substr($phpbb_config["version"], 0, 3);
-     
      
      $wpu = get_user_by('ID', $user_id);
      
@@ -1444,29 +1479,30 @@ public static function phpbb_pass_update($user, $new_pass) {
   }
   
  // switch install admin to check
- if($user_id == 1) { 
-      $phpbb_is_there_anybody = $w3phpbb_conn->get_row("SELECT username, user_email FROM ".$phpbb_config_file["table_prefix"]."users WHERE user_email_hash = '$user_email_hash' AND user_id != '2'");
- 	} else {
- 	  	$phpbb_is_there_anybody = $w3phpbb_conn->get_row("SELECT username, user_email FROM ".$phpbb_config_file["table_prefix"]."users WHERE user_email_hash = '$user_email_hash' AND username != '$wpu->user_login'");   
- 	}	    
- 	if ( null !== $phpbb_is_there_anybody ) { // skip admin install // revert // if there are usernames or email address, reset to old value and return error
+ if($user_id == 1){ 
+      $phpbb_is_there_anybody = $w3phpbb_conn->get_row("SELECT username, user_email FROM ".$w3all_config["table_prefix"]."users WHERE user_email_hash = '$user_email_hash' AND user_id != '2'");
+ 	  } else {
+ 	  	$phpbb_is_there_anybody = $w3phpbb_conn->get_row("SELECT username, user_email FROM ".$w3all_config["table_prefix"]."users WHERE user_email_hash = '$user_email_hash' AND username != '$wpu->user_login'");   
+ 	  }	    
+ 	    	       if ( null !== $phpbb_is_there_anybody ) { // skip admin install // revert // if there are usernames or email address, reset to old value and return error
       	
-      $wpu_db_utab = (is_multisite()) ? WPW3ALL_MAIN_DBPREFIX . 'users' : $wpdb->prefix . 'users';
+          $wpu_db_utab = (is_multisite()) ? WPW3ALL_MAIN_DBPREFIX . 'users' : $wpdb->prefix . 'users';
   
-	    $wpdb->query("UPDATE $wpu_db_utab SET user_email = '$old_user_data->user_email' WHERE ID = '$wpu->ID'");
+	      $wpdb->query("UPDATE $wpu_db_utab SET user_email = '$old_user_data->user_email' WHERE ID = '$wpu->ID'");
    
-      return true;     
-  }
+       return true;
+       
+     }
      
-  if($user_id == 1) { 
+ if($user_id == 1){ 
      $uid = 2; 
   } else {
-    $old_user_email_hash = self::w3all_phpbb_email_hash($old_user_data->user_email);
-    $uid = $w3phpbb_conn->get_var("SELECT user_id FROM ".$phpbb_config_file["table_prefix"]."users WHERE user_email_hash = '$old_user_email_hash' OR username = '$wpu->user_login'"); // as there is not UID with the above query ... TODO change this
-  }
+          $old_user_email_hash = self::w3all_phpbb_email_hash($old_user_data->user_email);
+          $uid = $w3phpbb_conn->get_var("SELECT user_id FROM ".$w3all_config["table_prefix"]."users WHERE user_email_hash = '$old_user_email_hash' OR username = '$wpu->user_login'"); // as there is not UID with the above query ... TODO change this
+        }
     
   if ( empty($uid) OR $uid < 2 ){ return; }
-   
+      
   // AstoSoft - Start
   $user_info = get_userdata($wpu->ID);
   error_log('phpbb_update_profile method!!! uid: '.$uid."\n");
@@ -1487,7 +1523,7 @@ public static function phpbb_pass_update($user, $new_pass) {
     }
   }
   // AstoSoft - End
-
+  
     // see also function phpbb_verify_credentials(
 
      $u_url = $wpu->user_url;
@@ -1514,15 +1550,15 @@ public static function phpbb_pass_update($user, $new_pass) {
    				
       if( $w3all_phpbb_lang_switch_yn == 1 ){ // do not update lang if not activated option
       	  if($uid == 2){ // if phpBB id 2 not update the user_type
-      		   $w3phpbb_conn->query("UPDATE ".$phpbb_config_file["table_prefix"]."users SET user_password = '$wpu->user_pass', user_email = '$wpu->user_email', user_email_hash = '$user_email_hash', user_lang = '$wp_lang_x_phpbb' WHERE user_id = '$uid'");
+      		   $w3phpbb_conn->query("UPDATE ".$w3all_config["table_prefix"]."users SET user_password = '$wpu->user_pass', user_email = '$wpu->user_email', user_email_hash = '$user_email_hash', user_lang = '$wp_lang_x_phpbb' WHERE user_id = '$uid'");
       	   } else { // note: here the user_type in phpBB will be set as 2 for any user on reactivation, but may should be based on group that user belong, may 3 if admin and so on ... so the above '$uid SELECT' query should be changed to achieve this ...
-                   $w3phpbb_conn->query("UPDATE ".$phpbb_config_file["table_prefix"]."users SET user_type = '$phpbb_user_type', user_password = '$wpu->user_pass', user_email = '$wpu->user_email', user_email_hash = '$user_email_hash', user_lang = '$wp_lang_x_phpbb' WHERE user_id = '$uid'");
+                   $w3phpbb_conn->query("UPDATE ".$w3all_config["table_prefix"]."users SET user_type = '$phpbb_user_type', user_password = '$wpu->user_pass', user_email = '$wpu->user_email', user_email_hash = '$user_email_hash', user_lang = '$wp_lang_x_phpbb' WHERE user_id = '$uid'");
                   }
        } else {
        	       if($uid == 2){ // if phpBB id 2 not update the user_type
-       	          $w3phpbb_conn->query("UPDATE ".$phpbb_config_file["table_prefix"]."users SET user_password = '$wpu->user_pass', user_email = '$wpu->user_email', user_email_hash = '$user_email_hash' WHERE user_id = '$uid'");
+       	          $w3phpbb_conn->query("UPDATE ".$w3all_config["table_prefix"]."users SET user_password = '$wpu->user_pass', user_email = '$wpu->user_email', user_email_hash = '$user_email_hash' WHERE user_id = '$uid'");
                 } else { // note: here the user_type in phpBB will be set as 2 for any user on reactivation, but may should be based on group that user belong, may 3 if admin and so on ... so the above '$uid SELECT' query should be changed to achieve this ...
-              	        $w3phpbb_conn->query("UPDATE ".$phpbb_config_file["table_prefix"]."users SET user_type = '$phpbb_user_type', user_password = '$wpu->user_pass', user_email = '$wpu->user_email', user_email_hash = '$user_email_hash' WHERE user_id = '$uid'");
+              	        $w3phpbb_conn->query("UPDATE ".$w3all_config["table_prefix"]."users SET user_type = '$phpbb_user_type', user_password = '$wpu->user_pass', user_email = '$wpu->user_email', user_email_hash = '$user_email_hash' WHERE user_id = '$uid'");
                        }
               }
               
@@ -1534,7 +1570,7 @@ public static function phpbb_pass_update($user, $new_pass) {
   $default_phpbb_profile_fields_names = array("phpbb_location","phpbb_website","phpbb_interests","phpbb_occupation","phpbb_aol","phpbb_icq","phpbb_yahoo","phpbb_facebook","phpbb_twitter","phpbb_skype","phpbb_youtube","phpbb_googleplus","phpbb_wlm");
  }
   
-  $phpbb_pf_cols = $w3phpbb_conn->get_results("SELECT field_name FROM ". $phpbb_config_file["table_prefix"] ."profile_fields");       
+  $phpbb_pf_cols = $w3phpbb_conn->get_results("SELECT field_name FROM ". $w3all_config["table_prefix"] ."profile_fields");       
 
    foreach($phpbb_pf_cols as $ppf_cols){
    	if( !in_array($ppf_cols->field_name, $default_phpbb_profile_fields_names) OR count($phpbb_pf_cols) != count($default_phpbb_profile_fields_names) ){
@@ -1548,10 +1584,10 @@ public static function phpbb_pass_update($user, $new_pass) {
       if (!empty($u_url)){
  	     // phpBB version 3.2>
   	      if( $phpbb_version == '3.2' ){
-  	        $w3phpbb_conn->query("INSERT INTO ".$phpbb_config_file["table_prefix"]."profile_fields_data (user_id, pf_phpbb_interests, pf_phpbb_occupation, pf_phpbb_location, pf_phpbb_youtube, pf_phpbb_twitter, pf_phpbb_googleplus, pf_phpbb_skype, pf_phpbb_facebook, pf_phpbb_icq, pf_phpbb_website, pf_phpbb_yahoo, pf_phpbb_aol)
+  	        $w3phpbb_conn->query("INSERT INTO ".$w3all_config["table_prefix"]."profile_fields_data (user_id, pf_phpbb_interests, pf_phpbb_occupation, pf_phpbb_location, pf_phpbb_youtube, pf_phpbb_twitter, pf_phpbb_googleplus, pf_phpbb_skype, pf_phpbb_facebook, pf_phpbb_icq, pf_phpbb_website, pf_phpbb_yahoo, pf_phpbb_aol)
             VALUES ('$uid','','','','','','','','','','$u_url','','') ON DUPLICATE KEY UPDATE pf_phpbb_website = '$u_url'");
            } else { // phpbb <3.2
-        	     	   $w3phpbb_conn->query("INSERT INTO ".$phpbb_config_file["table_prefix"]."profile_fields_data (user_id, pf_phpbb_interests, pf_phpbb_occupation, pf_phpbb_facebook, pf_phpbb_googleplus, pf_phpbb_icq, pf_phpbb_location, pf_phpbb_skype, pf_phpbb_twitter, pf_phpbb_website, pf_phpbb_wlm, pf_phpbb_yahoo, pf_phpbb_youtube, pf_phpbb_aol)
+        	     	   $w3phpbb_conn->query("INSERT INTO ".$w3all_config["table_prefix"]."profile_fields_data (user_id, pf_phpbb_interests, pf_phpbb_occupation, pf_phpbb_facebook, pf_phpbb_googleplus, pf_phpbb_icq, pf_phpbb_location, pf_phpbb_skype, pf_phpbb_twitter, pf_phpbb_website, pf_phpbb_wlm, pf_phpbb_yahoo, pf_phpbb_youtube, pf_phpbb_aol)
                    VALUES ('$uid','','','','','','','','','$u_url','','','','') ON DUPLICATE KEY UPDATE pf_phpbb_website = '$u_url'");
                   }
        }
@@ -1564,7 +1600,7 @@ public static function phpbb_pass_update($user, $new_pass) {
 
    global $wpdb,$w3all_config,$w3all_phpbb_lang_switch_yn;
   
-   $phpbb_config_file = $w3all_config;
+   
    $w3phpbb_conn = self::wp_w3all_phpbb_conn_init();
    $phpbb_config = unserialize(W3PHPBBCONFIG);
    $current_user = wp_get_current_user();
@@ -1572,7 +1608,7 @@ public static function phpbb_pass_update($user, $new_pass) {
     $us = unserialize(W3PHPBBUSESSION);
     $uid = $us[0]->user_id;
    } else {
-  	       $uid = $w3phpbb_conn->get_var("SELECT user_id FROM ".$phpbb_config_file["table_prefix"]."users WHERE username = '$wpu->user_login'"); // as there is not UID with the above query ... TODO change this
+  	       $uid = $w3phpbb_conn->get_var("SELECT user_id FROM ".$w3all_config["table_prefix"]."users WHERE username = '$wpu->user_login'"); // as there is not UID with the above query ... TODO change this
           }
           
    $wpu_db_um_tab = (is_multisite()) ? WPW3ALL_MAIN_DBPREFIX . 'usermeta' : $wpdb->prefix . 'usermeta';
@@ -1613,15 +1649,15 @@ $um = $wpdb->get_results("SELECT * FROM $wpu_db_um_tab WHERE user_id = '$user_id
 // switch install admin to check
  if(isset($peh)){ // via user profile: check if it is an email updated via user profile or by admin on user's admin page
   if($user_id == 1){ // if there is an email pending: remove after if another in phpBB found
-      $phpbb_is_there_anybody = $w3phpbb_conn->get_results("SELECT * FROM ".$phpbb_config_file["table_prefix"]."users WHERE user_email_hash ".$peh." AND user_id != '2'");
+      $phpbb_is_there_anybody = $w3phpbb_conn->get_results("SELECT * FROM ".$w3all_config["table_prefix"]."users WHERE user_email_hash ".$peh." AND user_id != '2'");
  	  } else {
- 	  	$phpbb_is_there_anybody = $w3phpbb_conn->get_results("SELECT * FROM ".$phpbb_config_file["table_prefix"]."users WHERE user_email_hash ".$peh." AND username != '$wpu->user_login'");   
+ 	  	$phpbb_is_there_anybody = $w3phpbb_conn->get_results("SELECT * FROM ".$w3all_config["table_prefix"]."users WHERE user_email_hash ".$peh." AND username != '$wpu->user_login'");   
  	  }	  
  	} else { // just check that there is not another same email in phpBB
  		 if($user_id == 1){ 
-      $phpbb_is_there_anybody = $w3phpbb_conn->get_results("SELECT * FROM ".$phpbb_config_file["table_prefix"]."users WHERE user_email_hash = '$user_email_hash' AND user_id != '2'");
+      $phpbb_is_there_anybody = $w3phpbb_conn->get_results("SELECT * FROM ".$w3all_config["table_prefix"]."users WHERE user_email_hash = '$user_email_hash' AND user_id != '2'");
  	  } else {
- 	  	$phpbb_is_there_anybody = $w3phpbb_conn->get_results("SELECT * FROM ".$phpbb_config_file["table_prefix"]."users WHERE user_email_hash = '$user_email_hash' AND username != '$wpu->user_login'");   
+ 	  	$phpbb_is_there_anybody = $w3phpbb_conn->get_results("SELECT * FROM ".$w3all_config["table_prefix"]."users WHERE user_email_hash = '$user_email_hash' AND username != '$wpu->user_login'");   
  	  }
  	}
  	    
@@ -1664,15 +1700,15 @@ $um = $wpdb->get_results("SELECT * FROM $wpu_db_um_tab WHERE user_id = '$user_id
    				
       if( $w3all_phpbb_lang_switch_yn == 1 ){ // do not update lang if not activated option
       	  if($uid == 2){ // if phpBB id 2 not update the user_type
-      		   $w3phpbb_conn->query("UPDATE ".$phpbb_config_file["table_prefix"]."users SET user_password = '$wpu->user_pass', user_email = '$wpu->user_email', user_email_hash = '$user_email_hash', user_lang = '$wp_lang_x_phpbb' WHERE user_id = '2'");
+      		   $w3phpbb_conn->query("UPDATE ".$w3all_config["table_prefix"]."users SET user_password = '$wpu->user_pass', user_email = '$wpu->user_email', user_email_hash = '$user_email_hash', user_lang = '$wp_lang_x_phpbb' WHERE user_id = '2'");
       	   } else { // note: here the user_type in phpBB will be set as 2 for any user on reactivation, but may should be based on group that user belong, may 3 if admin and so on ...
-                   $w3phpbb_conn->query("UPDATE ".$phpbb_config_file["table_prefix"]."users SET user_type = '$phpbb_user_type', user_password = '$wpu->user_pass', user_email = '$wpu->user_email', user_email_hash = '$user_email_hash', user_lang = '$wp_lang_x_phpbb' WHERE user_id = '$uid'");
+                   $w3phpbb_conn->query("UPDATE ".$w3all_config["table_prefix"]."users SET user_type = '$phpbb_user_type', user_password = '$wpu->user_pass', user_email = '$wpu->user_email', user_email_hash = '$user_email_hash', user_lang = '$wp_lang_x_phpbb' WHERE user_id = '$uid'");
                   }
        } else {
        	       if($uid == 2){ // if phpBB id 2 not update the user_type
-       	          $w3phpbb_conn->query("UPDATE ".$phpbb_config_file["table_prefix"]."users SET user_password = '$wpu->user_pass', user_email = '$wpu->user_email', user_email_hash = '$user_email_hash' WHERE user_id = '2'");
+       	          $w3phpbb_conn->query("UPDATE ".$w3all_config["table_prefix"]."users SET user_password = '$wpu->user_pass', user_email = '$wpu->user_email', user_email_hash = '$user_email_hash' WHERE user_id = '2'");
                 } else { // note: here the user_type in phpBB will be set as 2 for any user on reactivation, but may should be based on group that user belong, may 3 if admin and so on ...
-              	        $w3phpbb_conn->query("UPDATE ".$phpbb_config_file["table_prefix"]."users SET user_type = '$phpbb_user_type', user_password = '$wpu->user_pass', user_email = '$wpu->user_email', user_email_hash = '$user_email_hash' WHERE user_id = '$uid'");
+              	        $w3phpbb_conn->query("UPDATE ".$w3all_config["table_prefix"]."users SET user_type = '$phpbb_user_type', user_password = '$wpu->user_pass', user_email = '$wpu->user_email', user_email_hash = '$user_email_hash' WHERE user_id = '$uid'");
                        }
               }
               
@@ -1684,7 +1720,7 @@ $um = $wpdb->get_results("SELECT * FROM $wpu_db_um_tab WHERE user_id = '$user_id
   $default_phpbb_profile_fields_names = array("phpbb_location","phpbb_website","phpbb_interests","phpbb_occupation","phpbb_aol","phpbb_icq","phpbb_yahoo","phpbb_facebook","phpbb_twitter","phpbb_skype","phpbb_youtube","phpbb_googleplus","phpbb_wlm");
  }
   
-  $phpbb_pf_cols = $w3phpbb_conn->get_results("SELECT field_name FROM ". $phpbb_config_file["table_prefix"] ."profile_fields");       
+  $phpbb_pf_cols = $w3phpbb_conn->get_results("SELECT field_name FROM ". $w3all_config["table_prefix"] ."profile_fields");       
 
  if( count($phpbb_pf_cols) != count($default_phpbb_profile_fields_names) ){
 	$phpbb_mismatch_default_profile_fields = true;
@@ -1701,10 +1737,10 @@ $um = $wpdb->get_results("SELECT * FROM $wpu_db_um_tab WHERE user_id = '$user_id
       if (!empty($u_url)){
  	     // phpBB version 3.2>
   	      if( $phpbb_version == '3.2' ){
-  	        $w3phpbb_conn->query("INSERT INTO ".$phpbb_config_file["table_prefix"]."profile_fields_data (user_id, pf_phpbb_interests, pf_phpbb_occupation, pf_phpbb_location, pf_phpbb_youtube, pf_phpbb_twitter, pf_phpbb_googleplus, pf_phpbb_skype, pf_phpbb_facebook, pf_phpbb_icq, pf_phpbb_website, pf_phpbb_yahoo, pf_phpbb_aol)
+  	        $w3phpbb_conn->query("INSERT INTO ".$w3all_config["table_prefix"]."profile_fields_data (user_id, pf_phpbb_interests, pf_phpbb_occupation, pf_phpbb_location, pf_phpbb_youtube, pf_phpbb_twitter, pf_phpbb_googleplus, pf_phpbb_skype, pf_phpbb_facebook, pf_phpbb_icq, pf_phpbb_website, pf_phpbb_yahoo, pf_phpbb_aol)
             VALUES ('$uid','','','','','','','','','','$u_url','','') ON DUPLICATE KEY UPDATE pf_phpbb_website = '$u_url'");
            } else { // phpbb <3.2
-        	     	   $w3phpbb_conn->query("INSERT INTO ".$phpbb_config_file["table_prefix"]."profile_fields_data (user_id, pf_phpbb_interests, pf_phpbb_occupation, pf_phpbb_facebook, pf_phpbb_googleplus, pf_phpbb_icq, pf_phpbb_location, pf_phpbb_skype, pf_phpbb_twitter, pf_phpbb_website, pf_phpbb_wlm, pf_phpbb_yahoo, pf_phpbb_youtube, pf_phpbb_aol)
+        	     	   $w3phpbb_conn->query("INSERT INTO ".$w3all_config["table_prefix"]."profile_fields_data (user_id, pf_phpbb_interests, pf_phpbb_occupation, pf_phpbb_facebook, pf_phpbb_googleplus, pf_phpbb_icq, pf_phpbb_location, pf_phpbb_skype, pf_phpbb_twitter, pf_phpbb_website, pf_phpbb_wlm, pf_phpbb_yahoo, pf_phpbb_youtube, pf_phpbb_aol)
                    VALUES ('$uid','','','','','','','','','$u_url','','','','') ON DUPLICATE KEY UPDATE pf_phpbb_website = '$u_url'");
                   }
        }
@@ -1716,7 +1752,7 @@ public static function w3_check_phpbb_profile_wpnu($username){
 	if(empty($username)): return; endif;
 
  global $w3all_config,$wpdb;
- $phpbb_config_file = $w3all_config;
+ 
  $w3phpbb_conn = self::wp_w3all_phpbb_conn_init();
  
     $user_id = username_exists( $username );
@@ -1731,13 +1767,13 @@ public static function w3_check_phpbb_profile_wpnu($username){
          // check for 2 more of these on this class.wp.w3all-phpbb.php in case will be necessary to add something or remove
   
          if ( preg_match('/[^-0-9A-Za-z _.@]/',$username) ){
-	          echo '<p style="padding:30px;background-color:#fff;color:#000;font-size:1.3em">Sorry, your <strong>registered username on our forum contain characters not allowed on this CMS system</strong>, you can\'t be added or login in this site side (and you\'ll see this message) until logged in on forums as <b>'.$phpbb_user_session[0]->username.'</b>. Please return back and contact the administrator reporting about this error issue. Thank you <input type="button" value="Go Back" onclick="history.back(-1)" /></p>';
+	          echo '<p style="padding:30px;background-color:#fff;color:#000;font-size:1.3em">Sorry, your <strong>registered username on our forum contain characters not allowed on this CMS system</strong>, you can\'t be added or login in this side (and you\'ll see this message) until logged in on forums as <b>'.$phpbb_user_session[0]->username.'</b>. Please return back and may contact the administrator reporting this error issue. Thank you <input type="button" value="Go Back" onclick="history.back(-1)" /></p>';
            return;
          }
 
           $username = esc_sql($username);
           $phpbb_user = $w3phpbb_conn->get_results("SELECT u.*, g.* 
-                                               FROM ". $phpbb_config_file["table_prefix"] ."users u, ". $phpbb_config_file["table_prefix"] ."groups g 
+                                               FROM ". $w3all_config["table_prefix"] ."users u, ". $w3all_config["table_prefix"] ."groups g 
                                                WHERE u.username = '".$username."' 
                                                AND u.group_id != '1' AND u.group_id != '6' 
                                                AND u.group_id = g.group_id");            
@@ -1773,7 +1809,7 @@ if( $phpbb_user[0]->user_type != 1 && empty($user_info->wp_capabilities) ){ // r
   $wp_urole = implode(', ', $user_info->roles);
   if( $phpbb_user[0]->user_type == 1 && !empty($user_info->wp_capabilities) ){ // workaround for this new WP user, may still not active into phpBB
    $user_email_hash = self::w3all_phpbb_email_hash($user_info->user_email);
-   $w3phpbb_conn->query("UPDATE ".$phpbb_config_file["table_prefix"]."users SET user_type = '0' WHERE user_email_hash = '$user_email_hash' OR username = '$username'");
+   $w3phpbb_conn->query("UPDATE ".$w3all_config["table_prefix"]."users SET user_type = '0' WHERE user_email_hash = '$user_email_hash' OR username = '$username'");
   }
  }
 }
@@ -1812,7 +1848,6 @@ if( $phpbb_user[0]->user_type != 1 && empty($user_info->wp_capabilities) ){ // r
 public static function wp_w3all_get_phpbb_user_info($username){ // email/user_object/username
 	
  global $w3all_config;
- $phpbb_config_file = $w3all_config;
  $w3phpbb_conn = self::wp_w3all_phpbb_conn_init();
  
          //////// phpBB username chars fix          	   	
@@ -1835,9 +1870,9 @@ public static function wp_w3all_get_phpbb_user_info($username){ // email/user_ob
 
   $username = esc_sql($username);
 
-   $phpbb_user_data = $w3phpbb_conn->get_results("SELECT * FROM ".$phpbb_config_file["table_prefix"]."users 
-   JOIN ". $phpbb_config_file["table_prefix"] ."groups ON ". $phpbb_config_file["table_prefix"] ."groups.group_id = ". $phpbb_config_file["table_prefix"] ."users.group_id
-  AND ".$phpbb_config_file["table_prefix"]."users.".$uname_email." = '".$username."'");
+   $phpbb_user_data = $w3phpbb_conn->get_results("SELECT * FROM ".$w3all_config["table_prefix"]."users 
+    JOIN ". $w3all_config["table_prefix"] ."groups ON ". $w3all_config["table_prefix"] ."groups.group_id = ". $w3all_config["table_prefix"] ."users.group_id
+    AND ".$w3all_config["table_prefix"]."users.".$uname_email." = '".$username."'");
   
  return $phpbb_user_data;
  
@@ -1845,7 +1880,7 @@ public static function wp_w3all_get_phpbb_user_info($username){ // email/user_ob
 
 public static function wp_w3all_phpbb_delete_user ($user_id){
 	
- global $w3all_config;
+ global $w3all_config,$wpdb;
  $w3phpbb_conn = self::wp_w3all_phpbb_conn_init();
  
 // Only deactivate user in phpBB if deleted on WP
@@ -1854,8 +1889,7 @@ public static function wp_w3all_phpbb_delete_user ($user_id){
  $user->user_login = esc_sql($user->user_login);
  $w3phpbb_conn->query("UPDATE ".$w3all_config["table_prefix"]."users SET user_type = '1' WHERE username = '$user->user_login'");
 // temp fix for signups remove (if the user had not ativate his account maybe)
- global $wpdb;
- // exist the signup table?
+// exist the signup table?
  $wpu_db_utab = $wpdb->prefix . 'signups';
  $wpdb->query("SHOW TABLES LIKE '$wpu_db_utab'");
   if($wpdb->num_rows > 0){
@@ -1866,7 +1900,7 @@ public static function wp_w3all_phpbb_delete_user ($user_id){
 
 public static function wp_w3all_phpbb_delete_user_signup($user_id){
 	
- global $w3all_config;
+ global $w3all_config,$wpdb;
  $w3phpbb_conn = self::wp_w3all_phpbb_conn_init();
  
 // Only deactivate user in phpBB if deleted on WP
@@ -1877,8 +1911,7 @@ public static function wp_w3all_phpbb_delete_user_signup($user_id){
 if ( is_multisite() ) { // clean also signup of this user if WPMU on delete for compatibility with integration
 	// the check is done against an user that exist into users table, not signup
 	// we can't leave the user into signup table, while not result in user tab: because in phpBB an user could register with same email another user in the while
-global $wpdb;
-// cleanup also form signup
+// cleanup signup
 $wpu_db_utab = $wpdb->prefix . 'signups';
 $wpdb->query("DELETE FROM $wpu_db_utab WHERE user_email = '$user->user_email' OR user_login = '$user->user_login'");
 }
@@ -1909,7 +1942,48 @@ if ( $w3all_phpbb_user_deactivated_yn == 1 && !empty($wp_user_role) OR $w3all_ph
 // START SHORTCODEs for phpBB contents into WP
 //#######################
 
-// wp_w3all_get_phpbb_mchat_short vers 1.0 x phpBB mchat
+// w3allphpbbupm // wp_w3all_phpBB_u_pm_short vers 1.0 x phpBB PM
+public static function wp_w3all_phpbb_upm_short( $atts ) {
+ global $w3all_custom_output_files, $phpbb_on_template_iframe, $wp_w3all_forum_folder_wp, $w3all_url_to_cms;
+ //obsolete $wp_w3all_forum_folder_wp
+ //since on v3 and v4 iframe code, links can also points to real phpBB urls (overall_header code)
+ 
+if ( defined("W3PHPBBUSESSION") ) {
+ $phpbb_user_session = unserialize(W3PHPBBUSESSION);
+   if($phpbb_user_session[0]->user_unread_privmsg > 0){
+   	
+   $args = shortcode_atts( array(
+    'w3pm_class' => 'w3pm_class',
+    'w3pm_id' => 'w3pm_id',
+    'w3pm_inline_style' => '',
+    'w3pm_href_blank' => ''
+   ), $atts );
+
+ $w3pm_href = $w3all_custom_output_files == 1 ? get_home_url() . "/index.php/".$wp_w3all_forum_folder_wp.'/?i=pm&amp;folder=inbox">' : $w3all_url_to_cms.'/ucp.php?i=pm&amp;folder=inbox';
+ $w3pm_inline_style = empty($args['w3pm_inline_style']) ? '' : ' style="'.$args['w3pm_inline_style'].'"';
+ $w3pm_href_blank = ($args['w3pm_href_blank'] > 0) ? ' target="_blank"' : '';
+ $w3pm_class = $args['w3pm_class'];
+ $w3pm_id = $args['w3pm_id'];
+                
+  if( $w3all_custom_output_files == 1 ) {
+   $file = ABSPATH . 'wp-content/plugins/wp-w3all-config/wp_w3all_phpbb_upm_short.php';
+	 ob_start();
+	 include($file);
+   return ob_get_clean();
+  } else {
+	 $file = WPW3ALL_PLUGIN_DIR . 'views/wp_w3all_phpbb_upm_short.php';
+	 ob_start();
+	 include($file);
+   return ob_get_clean();
+	}
+
+ } // END if($phpbb_user_session[0]->user_unread_privmsg > 0){
+
+} // END defined
+  else { return false; }
+} // END function wp_w3all_phpbb_upm_short
+
+// wp_w3all_feeds_short vers 1.0 x phpBB feeds
 public static function wp_w3all_feeds_short( $atts ) {
 	global $w3all_custom_output_files;
 if(is_array($atts)){
@@ -1917,19 +1991,11 @@ if(is_array($atts)){
 } else {
 	return;
 }
-/* 
-$w3feed_url
-$w3feed_items_num
-$w3feed_text_words[0|intval(num of words)|content]
-$w3feed_ul_class
-$w3feed_li_class
-$w3feed_inline_style
-$w3feed_href_blank
-*/
+
 /* if ( !function_exists( 'wp_simplepie_autoload' ) ) { 
   require_once ABSPATH . WPINC . '/class-simplepie.php'; // native simplepie lib
  } */
-//return;
+
 include_once( ABSPATH . WPINC . '/feed.php' );	
 	
  $feed_v = shortcode_atts( array(
@@ -2004,7 +2070,16 @@ foreach($vals as $val){
 // wp_w3all_get_phpbb_mchat_short vers 1.0 x phpBB mchat
 public static function wp_w3all_get_phpbb_mchat_short( $atts ) {
 	global $w3all_url_to_cms, $w3all_custom_output_files;
-	
+	if (defined('W3PHPBBUCAPABILITIES')) {
+   $phpBBucap = unserialize(W3PHPBBUCAPABILITIES);
+  } 
+  
+  if(!current_user_can( 'manage_options')){  // avoid: let a WP admin see mchat, may because this: // memo about acl_options: https://www.axew3.com/w3/forums/viewtopic.php?f=2&p=4182#p4182
+   if(!in_array('u_mchat_view',$phpBBucap)){ // the user can see chat in phpBB?
+    return;
+   }
+  }
+  
 	$mch = shortcode_atts( array(
         'mchat_w3_toggle' => '0',
     ), $atts );
@@ -2313,13 +2388,13 @@ if($p['plaintext'] == 1){
 }
 
 // handle bbcode [code]...[/code] in the right way ...
-// the code is grabbed and replaced by a placeholder '#w3#bbcode#replace#' 
-// so, after the others bbcode tags conversions, re-added 
+// grab the code and replace with a placeholder '#w3#bbcode#replace#' 
+// so, after the others bbcode tags conversions, re-add each, properly wrapped 
 preg_match_all('~\<s\>\[code\]\</s\>(.*?)\<e\>\[/code\]\</e\>~si', $phpbb_post[0]->post_text, $cmatches, PREG_SET_ORDER);
 if($cmatches){ // remove and add custom placeholder
 $cc = 0;
 $phpbb_post[0]->post_text = preg_replace('~\<s\>\[code\]\</s\>(.*?)\<e\>\[/code\]\</e\>~si', '#w3#bbcode#replace#', $phpbb_post[0]->post_text, -1 ,$cc);
-// split, add 'placeholders'
+// split and add 'placeholders'
 $ps = preg_split('/#w3#bbcode#replace#/', $phpbb_post[0]->post_text, -1, PREG_SPLIT_DELIM_CAPTURE);
 $ccc = 0;
 $res = '';
@@ -2412,7 +2487,7 @@ $text = preg_replace_callback(
 
 public static function w3_bbcode_media($vmatches)
 {
-	// seem to work in few lines ... of course can be improved or done even better
+	// seem to work in few lines ... can be improved or done even better
  $vmatches[0] = str_replace('[wpw3allmediaconvert]', '', $vmatches[0]);
  $pos = strpos($vmatches[0], '">');
  $vmatches[0] = substr($vmatches[0], $pos+2);
@@ -2434,8 +2509,6 @@ public static function w3_bbcode_rep0($matches)
 //#######################
 // START ABOUT AVATARS
 //#######################
-
-// from 1.6.7 switch to search in phpBB as email hash that is Index Key into phpBB db users table
 
 public static function wp_w3all_assoc_phpbb_wp_users() {
 	 
@@ -2485,7 +2558,6 @@ public static function wp_w3all_assoc_phpbb_wp_users() {
  
    if(!empty($w3all_last_posts_users)):
       foreach ( $w3all_last_posts_users as $post_uname ) :
-       //$pun = esc_sql($post_uname->user_email_hash);
        $p_unames[] = $post_uname->user_email_hash;
       endforeach;
    endif;
@@ -2529,10 +2601,9 @@ $query_un ='';
 
 public static function w3all_get_phpbb_avatars_url( $w3unames ) {
    global $w3all_config, $w3all_avatar_via_phpbb_file;
-  $config = $w3all_config;
   $w3db_conn = self::w3all_db_connect();
 	$phpbb_config = unserialize(W3PHPBBCONFIG);
-  $uavatars = $w3db_conn->get_results( "SELECT user_id, username, user_avatar, user_avatar_type FROM ".$config["table_prefix"]."users WHERE user_email_hash IN(".$w3unames.") ORDER BY user_id DESC" );
+  $uavatars = $w3db_conn->get_results( "SELECT user_id, username, user_avatar, user_avatar_type FROM ".$w3all_config["table_prefix"]."users WHERE user_email_hash IN(".$w3unames.") ORDER BY user_id DESC" );
 
   if(!empty($uavatars)){
 
@@ -2701,8 +2772,8 @@ public static function last_forums_topics_res($ntopics){
 
 public static function wp_w3all_phpbb_conn_init() {
 	
-        	$w3db_conn = self::w3all_db_connect();	
-        	return $w3db_conn;
+       $w3db_conn = self::w3all_db_connect();	
+    	return $w3db_conn;
 	}
 
 //############################################
@@ -2733,7 +2804,7 @@ public static function w3all_get_unread_topics($username = false, $sql_extra = '
         // NOTE this: guess an user have setup a value for 'Last Forums Topics number of users's avatars to retrieve' on wp_w3all config: if not, we'll search until 50 by default. If a widget need to display more than 50 posts and no avatar option is active, than this value need to be changed here directly, or setting up the option value for 'Last Forums Topics number of users's avatars to retrieve' even if avatars aren't used
         $sql_limit = empty($w3all_lasttopic_avatar_num) ? 50 : $w3all_lasttopic_avatar_num;
 
-        $phpbb_config_file = $w3all_config;
+        
 	      $w3phpbb_conn = self::w3all_db_connect();
         $phpbb_config = unserialize(W3PHPBBCONFIG);
         $user = wp_get_current_user();
@@ -2745,7 +2816,7 @@ if (defined('W3PHPBBUSESSION')) {
    $last_mark = $us[0]->user_lastmark; // when/if the user have mark all as read
   } else {
     $user_email_hash = self::w3all_phpbb_email_hash($user->user_email);
-    $phpbb_u = $w3phpbb_conn->get_row("SELECT * FROM ".$phpbb_config_file["table_prefix"]."users WHERE user_email_hash = '$user_email_hash' OR username = '$user->user_login'") ;
+    $phpbb_u = $w3phpbb_conn->get_row("SELECT * FROM ".$w3all_config["table_prefix"]."users WHERE user_email_hash = '$user_email_hash' OR username = '$user->user_login'") ;
     $user_id = $phpbb_u->user_id;
     $last_mark = $phpbb_u->user_lastmark; // when/if the user have mark all as read
   }
@@ -2755,7 +2826,7 @@ if (defined('W3PHPBBUSESSION')) {
 
 	if (empty($sql_sort))
 	{
-		$sql_sort = "ORDER BY ".$phpbb_config_file["table_prefix"]."topics.topic_last_post_time DESC, ".$phpbb_config_file["table_prefix"]."topics.topic_last_post_id DESC";
+		$sql_sort = "ORDER BY ".$w3all_config["table_prefix"]."topics.topic_last_post_time DESC, ".$w3all_config["table_prefix"]."topics.topic_last_post_id DESC";
 	}
 
 	//if ($config['load_db_lastread'] && $user->data['is_registered']) // wp_w3all config active or not, and user logged or not. At moment all this is not necessary:
@@ -2763,18 +2834,18 @@ if (defined('W3PHPBBUSESSION')) {
 	{     
 		// Get list of the unread topics
 		
-	 $w3all_exec_sql_array = $w3phpbb_conn->get_results("SELECT ".$phpbb_config_file["table_prefix"]."topics.topic_id, ".$phpbb_config_file["table_prefix"]."topics.topic_last_post_time, ".$phpbb_config_file["table_prefix"]."topics_track.mark_time as topic_mark_time, ".$phpbb_config_file["table_prefix"]."forums_track.mark_time as forum_mark_time 
-     FROM ".$phpbb_config_file["table_prefix"]."topics 
-      LEFT JOIN ".$phpbb_config_file["table_prefix"]."topics_track 
-        ON ".$phpbb_config_file["table_prefix"]."topics_track.user_id = '".$user_id."' 
-       AND ".$phpbb_config_file["table_prefix"]."topics.topic_id = ".$phpbb_config_file["table_prefix"]."topics_track.topic_id 
-      LEFT JOIN ".$phpbb_config_file["table_prefix"]."forums_track 
-        ON ".$phpbb_config_file["table_prefix"]."forums_track.user_id = '".$user_id."' AND ".$phpbb_config_file["table_prefix"]."topics.forum_id = ".$phpbb_config_file["table_prefix"]."forums_track.forum_id
-     WHERE ".$phpbb_config_file["table_prefix"]."topics.topic_last_post_time > '".$last_mark."' 
+	 $w3all_exec_sql_array = $w3phpbb_conn->get_results("SELECT ".$w3all_config["table_prefix"]."topics.topic_id, ".$w3all_config["table_prefix"]."topics.topic_last_post_time, ".$w3all_config["table_prefix"]."topics_track.mark_time as topic_mark_time, ".$w3all_config["table_prefix"]."forums_track.mark_time as forum_mark_time 
+     FROM ".$w3all_config["table_prefix"]."topics 
+      LEFT JOIN ".$w3all_config["table_prefix"]."topics_track 
+        ON ".$w3all_config["table_prefix"]."topics_track.user_id = '".$user_id."' 
+       AND ".$w3all_config["table_prefix"]."topics.topic_id = ".$w3all_config["table_prefix"]."topics_track.topic_id 
+      LEFT JOIN ".$w3all_config["table_prefix"]."forums_track 
+        ON ".$w3all_config["table_prefix"]."forums_track.user_id = '".$user_id."' AND ".$w3all_config["table_prefix"]."topics.forum_id = ".$w3all_config["table_prefix"]."forums_track.forum_id
+     WHERE ".$w3all_config["table_prefix"]."topics.topic_last_post_time > '".$last_mark."' 
        AND (
-				(".$phpbb_config_file["table_prefix"]."topics_track.mark_time IS NOT NULL AND ".$phpbb_config_file["table_prefix"]."topics.topic_last_post_time > ".$phpbb_config_file["table_prefix"]."topics_track.mark_time) OR
-				(".$phpbb_config_file["table_prefix"]."topics_track.mark_time IS NULL AND ".$phpbb_config_file["table_prefix"]."forums_track.mark_time IS NOT NULL AND ".$phpbb_config_file["table_prefix"]."topics.topic_last_post_time > ".$phpbb_config_file["table_prefix"]."forums_track.mark_time) OR
-				(".$phpbb_config_file["table_prefix"]."topics_track.mark_time IS NULL AND ".$phpbb_config_file["table_prefix"]."forums_track.mark_time IS NULL)
+				(".$w3all_config["table_prefix"]."topics_track.mark_time IS NOT NULL AND ".$w3all_config["table_prefix"]."topics.topic_last_post_time > ".$w3all_config["table_prefix"]."topics_track.mark_time) OR
+				(".$w3all_config["table_prefix"]."topics_track.mark_time IS NULL AND ".$w3all_config["table_prefix"]."forums_track.mark_time IS NOT NULL AND ".$w3all_config["table_prefix"]."topics.topic_last_post_time > ".$w3all_config["table_prefix"]."forums_track.mark_time) OR
+				(".$w3all_config["table_prefix"]."topics_track.mark_time IS NULL AND ".$w3all_config["table_prefix"]."forums_track.mark_time IS NULL)
 				)
 			$sql_sort LIMIT $sql_limit");
 
@@ -2827,10 +2898,10 @@ public static function wp_w3all_wp_after_pass_reset_msmu( $user ) {
 	 global $w3all_config,$wpdb;
 	if(!$user){ return; }
 	$w3db_conn = self::wp_w3all_phpbb_conn_init();
-	$phpbb_config_file = $w3all_config;
+	
  
 		$user_email_hash = self::w3all_phpbb_email_hash($user->user_email);
-    $res = $w3db_conn->query("UPDATE ".$phpbb_config_file["table_prefix"]."users SET user_type = '0', user_password = '".$user->user_pass."' WHERE user_email_hash = '".$user_email_hash."' OR username = '".$user->user_login."'");
+    $res = $w3db_conn->query("UPDATE ".$w3all_config["table_prefix"]."users SET user_type = '0', user_password = '".$user->user_pass."' WHERE user_email_hash = '".$user_email_hash."' OR username = '".$user->user_login."'");
 
 }
 

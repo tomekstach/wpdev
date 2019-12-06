@@ -6,7 +6,7 @@
 Plugin Name: WordPress w3all phpBB integration
 Plugin URI: http://axew3.com/w3
 Description: Integration plugin between WordPress and phpBB. It provide free integration - users transfer/login/register. Easy, light, secure, powerful. 
-Version: 1.9.8
+Version: 1.9.9
 Author: axew3
 Author URI: http://www.axew3.com/w3
 License: GPLv2 or later
@@ -14,7 +14,7 @@ Text Domain: wp-w3all-phpbb-integration
 Domain Path: /languages/
 
 =====================================================================================
-Copyright (C) 2019 - axew3.com
+Copyright (C) 2020 - axew3.com
 =====================================================================================
 */
 // Security
@@ -33,7 +33,7 @@ endif;
 if( get_option('w3all_not_link_phpbb_wp') == 1 ){
 define('WPW3ALL_NOT_ULINKED', true);
 }
-define( 'WPW3ALL_VERSION', '1.9.8' );
+define( 'WPW3ALL_VERSION', '1.9.9' );
 define( 'WPW3ALL_MINIMUM_WP_VERSION', '4.0' );
 define( 'WPW3ALL_PLUGIN_URL', plugin_dir_url( __FILE__ ) );
 define( 'WPW3ALL_PLUGIN_DIR', plugin_dir_path( __FILE__ ) );
@@ -316,9 +316,13 @@ function wp_w3all_phpbb_registration_save2( $user_id ) {
 
 }
   
-  function wp_w3all_phpbb_login($user_login, $user = '') {
-     $phpBB_user_session_set = WP_w3all_phpbb::phpBB_user_session_set_res($user); 
+ function wp_w3all_phpbb_login($user_login, $user = '') {
+ 	// execute only if // on wp_check_password filter not fired
+   if(! defined("PHPBBCOOKIERELEASED") ){ 
+     $phpBB_user_session_set = WP_w3all_phpbb::phpBB_user_session_set_res($user);
+     define("PHPBBCOOKIERELEASED", true);
    }
+ }
   
    function wp_w3all_up_wp_prof_on_phpbb($user_id, $old_user_data) {
     	
@@ -332,6 +336,7 @@ function wp_w3all_phpbb_registration_save2( $user_id ) {
    }
    
 if(! defined("WPW3ALL_NOT_ULINKED")){
+	add_filter( 'auth_cookie_expiration', 'w3all_rememberme_long' );
 	add_filter( 'registration_errors', 'wp_w3all_check_fields', 10, 3 ); // this prevent any user addition, if phpBB email or username already exist in phpBB
   add_action( 'user_register', 'wp_w3all_phpbb_registration_save2', 10, 1 );
   add_action( 'after_password_reset', 'wp_w3all_wp_after_password_reset', 10, 2 );
@@ -417,6 +422,10 @@ function w3all_iframe_href_switch(){
                }
 
       }
+      
+  function w3all_rememberme_long($expire) { // Set remember me wp cookie to expire in one year
+    return YEAR_IN_SECONDS;
+   }   
 
    } // end PHPBB_INSTALLED
 } // end not in admin
@@ -462,8 +471,9 @@ if(strpos($_SERVER['SCRIPT_NAME'],'wp-admin') === false){
 }
 
 if(! is_admin()){
+// w3allfeed // unique shortcode that can run without integration active, so this is added more below
 //add_shortcode( 'w3allfeed', array( 'WP_w3all_phpbb', 'wp_w3all_feeds_short' ) );
-
+add_shortcode( 'w3allphpbbupm', array( 'WP_w3all_phpbb', 'wp_w3all_phpbb_upm_short' ) );
 add_shortcode( 'w3allforumpost', array( 'WP_w3all_phpbb', 'wp_w3all_get_phpbb_post_short' ) );
 add_shortcode( 'w3allastopics', array( 'WP_w3all_phpbb', 'wp_w3all_get_phpbb_lastopics_short' ) );
 add_shortcode( 'w3allastopicforumsids', array( 'WP_w3all_phpbb', 'wp_w3all_phpbb_last_topics_single_multi_fp_short' ) );
@@ -526,9 +536,10 @@ add_action( 'init', 'w3all_add_phpbb_user' );
                 'meta' => $args_meta );
 
        $wp_admin_bar->add_node( $args );
+       unset($phpbb_user_session);
      }
   } else { return false; }
-} 
+}
 
  if ( ! function_exists( 'wp_hash_password' ) && ! defined("WPW3ALL_NOT_ULINKED") ) :
 
@@ -589,6 +600,7 @@ function wp_check_password($password, $hash, $user_id) {
      if ($check === true){
      	if($wpu){
      	  $phpBB_user_session_set = WP_w3all_phpbb::phpBB_user_session_set_res($wpu); 
+     	  define("PHPBBCOOKIERELEASED", true); // then the session will be set on_login hook, if this filter bypassed
       } else {
            return false;
         }

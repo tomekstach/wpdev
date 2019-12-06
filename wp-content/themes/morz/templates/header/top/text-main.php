@@ -1,4 +1,5 @@
 <?php
+// AstoSoft
 /*if ( ! get_option( 'vamtam_last_import_map' ) ) {
 		return;
 	}*/

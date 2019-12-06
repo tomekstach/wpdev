@@ -43,9 +43,11 @@ $wrapper_class = array();
 $wrapper_class[] = $news ? 'news' : 'regular';
 $wrapper_class[] = $settings->layout;
 
+// AstoSoft - start
 if ($news && !$is_cube) {
   $wrapper_class[] = 'row';
 }
+// AstoSoft - end
 
 $cube_options         = array();
 $data_options_escaped = '';
@@ -85,7 +87,7 @@ if ($is_cube) {
 <div class="loop-wrapper clearfix <?php echo esc_attr(implode(' ', $wrapper_class)) ?>"
   data-columns="<?php echo esc_attr($settings->columns) ?>"
   <?php echo $data_options_escaped // xss ok 
-                                                                                                                                                  ?>>
+                                                                                                                                                        ?>>
   <?php
 
   do_action('vamtam_before_main_loop');

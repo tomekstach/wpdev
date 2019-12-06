@@ -5,7 +5,7 @@
  *
  * @package vamtam/morz
  */
-
+// AstoSoft - start
 $user = wp_get_current_user();
 
 $the_slug = str_replace('/', '', $_SERVER['REQUEST_URI']);
@@ -15,7 +15,7 @@ $page_title = get_the_title($page);
 if ($page_title != '' && !in_array('subscriber', $user->roles)) {
   wp_redirect(get_site_url() . '/dziekujemy-za-rejestracje/');
 }
-
+// AstoSoft - end
 get_header();
 
 VamtamEnqueues::enqueue_style_and_print('vamtam-not-found');
