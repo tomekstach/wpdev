@@ -1282,7 +1282,7 @@ function after_sent_mail($cf7)
     }
 
     // Umowa serwisowa form 
-    if ($data['_wpcf7'] == '47037') {
+    if ($data['_wpcf7'] == '47037' || $data['_wpcf7'] == '47951') {
 
       global $current_user;
       $current_user = wp_get_current_user();
@@ -1292,7 +1292,7 @@ function after_sent_mail($cf7)
 
       $args = array(
         'comment_status' => 'closed',
-        'post_status'    => 'draft',
+        'post_status'    => 'publish',
         'post_title'     => 'Plik do umowy serwisowej z ' . $data['zleceniodawca'] . ', dodany ' . $date,
         'post_type'      => 'plik_umowy'
       );

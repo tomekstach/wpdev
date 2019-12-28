@@ -239,6 +239,33 @@ function wl_get_contracts()
         $umowa->last_name           = get_field("nazwisko_klienta", $umowa->id);
         $umowa->data_zgloszenia     = get_the_date('d.m.Y H:i', $umowa->id);
 
+        // args - files
+        $args_files = array(
+          'numberposts'   => -1,
+          'post_status '  => array('publish', 'pending', 'draft', 'auto-draft', 'future', 'private', 'inherit', 'trash'),
+          'post_type'     => 'plik_umowy',
+          'meta_key'      => 'umowa_serwisowa',
+          'meta_value'    => $umowa->id
+        );
+
+        // query - files
+        $post_files   = get_posts($args_files);
+        $umowa->files = [];
+
+        foreach ($post_files as $post_file) {
+          $file = new \stdClass;
+          $file->id             = $post_file->ID;
+          $file->sciezka        = get_field('sciezka', $file->id);
+          $file->haslo          = get_field('haslo', $file->id);
+          $file->program        = get_field('program', $file->id);
+          $file->wersja         = get_field('wersja', $file->id);
+          $file->wersja_sql     = get_field('wersja_sql', $file->id);
+          $file->opis_problemu  = get_field('opis_problemu', $file->id);
+          $file->zalacznik      = get_field('zalacznik', $file->id);
+
+          $umowa->files[] = $file;
+        }
+
         $list[] = $umowa;
       }
     }

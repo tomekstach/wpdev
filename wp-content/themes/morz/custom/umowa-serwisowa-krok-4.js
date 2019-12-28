@@ -23,8 +23,8 @@ jQuery(document).ready(function($) {
       success: function(data) {
 
         if (data.umowa_id > 0) {
-          console.log('umowa_id: ' + umowa_id);
-          $("#umowa_id").val(umowa_id);
+          console.log('umowa_id: ' + data.umowa_id);
+          $("#umowa_id").val(data.umowa_id);
           $("#NIPzlecajacej").val(data.nip);
           $("#zleceniodawca").val(data.nazwa_firmy);
           $("#emailzleceniodawcy").val(data.email);
@@ -63,8 +63,8 @@ jQuery(document).ready(function($) {
         success: function(data) {
 
           if (data.umowa_id > 0) {
-            console.log('umowa_id: ' + umowa_id);
-            $("#umowa_id").val(umowa_id);
+            console.log('umowa_id: ' + data.umowa_id);
+            $("#umowa_id").val(data.umowa_id);
             $("#NIPzlecajacej").val(data.nip);
             $("#zleceniodawca").val(data.nazwa_firmy);
             $("#emailzleceniodawcy").val(data.email);
