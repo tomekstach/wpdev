@@ -157,6 +157,8 @@ function wl_add_contract()
   wp_mail($to, $subject, $message, $headers);
   $to = 'boguslaw.tober@assecobs.pl';
   wp_mail($to, $subject, $message, $headers);
+  $to = 'Agnieszka.Palyz@assecobs.pl';
+  wp_mail($to, $subject, $message, $headers);
 
   return $new_post_id;
 }
