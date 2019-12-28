@@ -55,12 +55,12 @@ jQuery(document).ready(function($) {
       var obj = JSON.parse(string);
       if (obj.code == 200) {
         $('#input-nazwa-firmy').val(obj.content.name);
-        $('#input-imie').val(obj.content.firstname);
-        $('#input-nazwisko').val(obj.content.lastname);
+        //$('#input-imie').val(obj.content.firstname);
+        //$('#input-nazwisko').val(obj.content.lastname);
         $('.numbernip .wpcf7-not-valid-tip').remove();
         $('.textfirma .wpcf7-not-valid-tip').remove();
-        $('.imie .wpcf7-not-valid-tip').remove();
-        $('.nazwisko .wpcf7-not-valid-tip').remove();
+        //$('.imie .wpcf7-not-valid-tip').remove();
+        //$('.nazwisko .wpcf7-not-valid-tip').remove();
       } else {
         $('.numbernip .wpcf7-not-valid-tip').remove();
         $('.numbernip').append('<span role="alert" class="wpcf7-not-valid-tip">' + obj.content + '</span>');
