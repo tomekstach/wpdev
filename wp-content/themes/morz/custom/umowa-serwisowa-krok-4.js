@@ -45,6 +45,47 @@ jQuery(document).ready(function($) {
       }
     });
   }
+
+  var wpcf7Elm = document.querySelector('.wpcf7');
+
+  wpcf7Elm.addEventListener('wpcf7submit', function(event) {
+
+    if (contract != '') {
+      $.ajax({
+        type: "POST",
+        url: "/wp-json/wl/v1/getContract",
+        data: {
+          contract: contract
+        },
+        beforeSend: function(xhr) {
+          xhr.setRequestHeader('X-WP-Nonce', UmowaSerwisowaSettings.nonce);
+        },
+        success: function(data) {
+
+          if (data.umowa_id > 0) {
+            console.log('umowa_id: ' + umowa_id);
+            $("#umowa_id").val(umowa_id);
+            $("#NIPzlecajacej").val(data.nip);
+            $("#zleceniodawca").val(data.nazwa_firmy);
+            $("#emailzleceniodawcy").val(data.email);
+            $("#first_name").val(data.first_name);
+            $("#last_name").val(data.last_name);
+            $("#user_tel").val(data.user_tel);
+            $('#NIPzlecajacej').prop('readonly', true);
+            $('#zleceniodawca').prop('readonly', true);
+            $('#emailzleceniodawcy').prop('readonly', true);
+            $("#loader-content").hide();
+            $("#krok-4-content").show();
+          } else {
+            console.log('ERROR!');
+            $("#loader-content").hide();
+            $(".wpcf7-response-output").html(data.message);
+            $(".wpcf7-response-output").show();
+          }
+        }
+      });
+    }
+  }, false);
 });
 
 function getUrlVars() {

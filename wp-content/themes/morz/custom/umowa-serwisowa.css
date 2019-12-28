@@ -308,6 +308,12 @@ p.pp-cf7-form-description,
   margin: 20px 0 0 0;
 }
 
+#main .wpcf7-response-output.wpcf7-mail-sent-ok {
+  background-color: #dff0d8;
+  border-color: #d6e9c6;
+  color: #3c763d;
+}
+
 #main .wpcf7-form input.wpcf7-submit {
   font-size: 14px;
   line-height: 16px;
