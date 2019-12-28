@@ -8,6 +8,9 @@ jQuery(document).ready(function($) {
       $('#NIPzlecajacej').val($('#input-nip').val());
       $('#zleceniodawca').val($('#input-nazwa-firmy').val());
       $('#emailzleceniodawcy').val($('#input-email').val());
+      $('#first_name').val($('#input-imie').val());
+      $('#last_name').val($('#input-nazwisko').val());
+      $('#user_tel').val($('#input-tel').val());
       $('#NIPzlecajacej').prop('readonly', true);
       $('#zleceniodawca').prop('readonly', true);
       $('#emailzleceniodawcy').prop('readonly', true);
@@ -22,7 +25,7 @@ jQuery(document).ready(function($) {
   });
 
   document.addEventListener('wpcf7mailsent', function(event) {
-    console.log('mailsent!!!');
-    location.href = wpcf7_redirect_forms[47037].external_url + '?contract=1';
+    //console.log('mailsent!!!');
+    location.href = wpcf7_redirect_forms[47037].external_url + '?contract=' + $("#umowa_id").val() + '&new=982y547syrth94w8j0826';
   });
 });

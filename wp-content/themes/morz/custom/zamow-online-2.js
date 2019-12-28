@@ -52,7 +52,7 @@ jQuery(document).ready(function($) {
   });
 
   $('#get-nip-1').click(function(e) {
-    if (!ValidateNip($('#input-nip').val())) {
+    if (!ValidateNip($('#input-nip').val(), '#input-nip')) {
       $('.wpcf7-form-control-wrap.NIP .wpcf7-not-valid-tip').remove();
       $('.wpcf7-form-control-wrap.NIP').append('<span role="alert" class="wpcf7-not-valid-tip">NIP jest niepoprawny!</span>');
       return false;
@@ -103,11 +103,10 @@ jQuery(document).ready(function($) {
   });
 });
 
-function ValidateNip(nip) {
-  if (typeof nip !== 'string')
-    return false;
-
+function ValidateNip(nip, iden) {
   nip = nip.replace(/[\ \-]/gi, '');
+
+  jQuery(iden).val(nip);
 
   if (/^([0-9])\1{9}$/.test(nip)) {
     return false;

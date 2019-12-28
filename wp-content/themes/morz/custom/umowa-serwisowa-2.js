@@ -2,6 +2,9 @@ jQuery(document).ready(function($) {
 
   $('.cf7-tab-1 .multistep-cf7-next').click(function(e) {
 
+    $("#loader-content").show();
+    $("#rodo-content").hide();
+
     if ($('#input-nip').val() != '') {
       console.log('Check RODO contract!');
 
@@ -28,7 +31,7 @@ jQuery(document).ready(function($) {
 
         if (obj.code == 200) {
 
-          if (obj.content.ArrayDPAgreementGetResult.DPAgreementGetResult.DataPodpisania) {
+          if (obj.content.ArrayDPAgreementGetResult.Status == '1') {
             console.log(obj.content.ArrayDPAgreementGetResult);
 
             var d = new Date(obj.content.ArrayDPAgreementGetResult.DPAgreementGetResult.DataPodpisania);
@@ -50,16 +53,29 @@ jQuery(document).ready(function($) {
               $('#formularz-rodo').css('display', 'none');
               $('#formularz-rodo-info').css('display', 'block');
             } else {
+              $('#formularz-rodo').css('display', 'block');
+              $('#formularz-rodo-info').css('display', 'none');
               $('#data-umowy').val(c_output);
               $('#data-podpisania-umowy').html(c_output);
               $('#umowa-podpisana').val('0');
             }
+          } else {
+            $('#formularz-rodo').css('display', 'block');
+            $('#formularz-rodo-info').css('display', 'none');
+            $('#data-umowy').val(c_output);
+            $('#data-podpisania-umowy').html(c_output);
+            $('#umowa-podpisana').val('0');
           }
         } else {
+          $('#formularz-rodo').css('display', 'block');
+          $('#formularz-rodo-info').css('display', 'none');
           $('#data-umowy').val(c_output);
           $('#data-podpisania-umowy').html(c_output);
           $('#umowa-podpisana').val('0');
         }
+
+        $("#loader-content").hide();
+        $("#rodo-content").show();
       });
     }
   });
@@ -74,7 +90,10 @@ jQuery(document).ready(function($) {
         data: {
           nip: $('#input-nip').val(),
           firm: $('#input-nazwa-firmy').val(),
-          email: $('#input-email').val()
+          email: $('#input-email').val(),
+          firstname: $('#input-imie').val(),
+          lastname: $('#input-nazwisko').val(),
+          phone: $('#input-tel').val()
         },
         beforeSend: function(xhr) {
           xhr.setRequestHeader('X-WP-Nonce', UmowaSerwisowaSettings.nonce);

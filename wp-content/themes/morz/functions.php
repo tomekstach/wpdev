@@ -643,7 +643,13 @@ function custom_archive_text_validation_filter($result, $tag)
 
   if ($tag->name == 'your-login-admin') {
     if (username_exists($_POST['your-login-admin']) && !array_key_exists('exist-user', $_POST)) {
-      $result->invalidate($tag, "Uzytkownik o podanej nazwie juz istnieje w systemie! Jezeli chcesz dodać nową rolę do tego uzytkownika, zaloguj się i wypełnij ten formularz jeszcze raz.");
+      $user   = get_user_by('login', $_POST['your-login-admin']);
+      $roles  = (array) $user->roles;
+      if (in_array('subscriber', $roles) || in_array('registered', $roles)) {
+        $result->invalidate($tag, "Uzytkownik o podanej nazwie juz istnieje w systemie!");
+      } else {
+        $result->invalidate($tag, "Uzytkownik o podanej nazwie juz istnieje w systemie! Jezeli chcesz dodać nową rolę do tego uzytkownika, zaloguj się i wypełnij ten formularz jeszcze raz.");
+      }
     }
   }
 
@@ -692,7 +698,13 @@ function custom_archive_email_validation_filter($result, $tag)
 {
   if ($tag->name == 'email-admin') {
     if (email_exists($_POST['email-admin']) && !array_key_exists('exist-user', $_POST)) {
-      $result->invalidate($tag, "Uzytkownik o podanej adresie e-mail juz istnieje w systemie! Jezeli chcesz dodać nową rolę do tego uzytkownika, zaloguj się i wypełnij ten formularz jeszcze raz.");
+      $user   = get_user_by('email', $_POST['email-admin']);
+      $roles  = (array) $user->roles;
+      if (in_array('subscriber', $roles) || in_array('registered', $roles)) {
+        $result->invalidate($tag, "Uzytkownik o podanej adresie e-mail juz istnieje w systemie!");
+      } else {
+        $result->invalidate($tag, "Uzytkownik o podanej adresie e-mail juz istnieje w systemie! Jezeli chcesz dodać nową rolę do tego uzytkownika, zaloguj się i wypełnij ten formularz jeszcze raz.");
+      }
     }
   }
 
@@ -942,7 +954,7 @@ function after_sent_mail($cf7)
       // TODO: Use webservices to send data to ERP???
     }
 
-    // Register dealer form
+    // Register biuro form
     if ($data['_wpcf7'] == '46621') {
 
       if (!array_key_exists('exist-user', $data)) {
@@ -1229,10 +1241,10 @@ function after_sent_mail($cf7)
             add_user_to_blog($wpdev_id, $user_id, 'brak');
           }
 
-          $pomoc_id = get_blog_id_from_url("biuro.wpdev.wapro.pl");
+          $biuro_id = get_blog_id_from_url("biuro.wpdev.wapro.pl");
 
-          if ($pomoc_id) {
-            add_user_to_blog($pomoc_id, $user_id, 'brak');
+          if ($biuro_id) {
+            add_user_to_blog($biuro_id, $user_id, 'brakbiuro');
           }
         } else {
           $user = new \WP_User($user_id);
@@ -1272,12 +1284,16 @@ function after_sent_mail($cf7)
     // Umowa serwisowa form 
     if ($data['_wpcf7'] == '47037') {
 
+      global $current_user;
+      $current_user = wp_get_current_user();
+      $user_meta    = get_user_meta($current_user->ID);
+
       $date = date('Y-m-d H:i:s');
 
       $args = array(
         'comment_status' => 'closed',
         'post_status'    => 'draft',
-        'post_title'     => 'Plik do umowy serwisowej z ' . $data['textfirma'] . ', dodany ' . $date,
+        'post_title'     => 'Plik do umowy serwisowej z ' . $data['zleceniodawca'] . ', dodany ' . $date,
         'post_type'      => 'plik_umowy'
       );
 
@@ -1316,84 +1332,16 @@ function after_sent_mail($cf7)
       // Add description to the file data
       update_field('field_5de2cfd08e44b',  $data['problem'], 'post_' . $new_post_id);
       // Add attachment to the file data
-      if (count($_FILES['zalacznik']['name'])) {
-        $tmpFilePath = $_FILES['zalacznik']['tmp_name'];
-        // Make sure we have a filepath.
-        if ($tmpFilePath != "") {
-          // Setup our new file path.
-          $newFilePath = WP_CONTENT_DIR . '/uploads/wpcf7_uploads/' . prepareFileName($_FILES['zalacznik']['name']);
-          if (copy($tmpFilePath, $newFilePath)) {
-            update_field('field_5de2d0018e44c',  content_url() . '/uploads/wpcf7_uploads/' . prepareFileName($_FILES['zalacznik']['name']), 'post_' . $new_post_id);
+
+      $uploaded_files = $submission->uploaded_files();
+
+      if (count($uploaded_files)) {
+        if (isset($uploaded_files['zalacznik'])) {
+          if ($uploaded_files['zalacznik'] != '') {
+            update_field('field_5de2d0018e44c',  site_url() . explode('htdocs', $uploaded_files['zalacznik'])[1], 'post_' . $new_post_id);
           }
         }
       }
-
-      $to = 'tomasz.stach@astosoft.pl';
-      $subject = 'TEST';
-      $headers[] = 'From: WAPRO ERP <kontakt@wapro.pl>';
-      $headers[] = 'Reply-To: sprzedaz.wapro@assecobs.pl';
-      $headers[] = 'Content-Type: text/html; charset=UTF-8';
-      $message = '<body bgcolor="#f7f5f5" style="background-color:#f7f5f5;">
-        <table border="0" cellspacing="0" cellpadding="0" align="center" width="600" bgcolor="#fff" style="width:600px; background-color:#fff;">
-          <tbody width="600" style="width:600px;">
-            <tr width="600" style="width:600px;">
-              <td colspan="3">
-                <table>
-                  <tr>
-                    <td width="200" style="width:200px;"><img BORDER="0" style="display:block; padding:0; margin:0;" src="http://www.assecobs.pl/storage/mail/stat/logo.png" alt="WAPRO ERP by Asseco" title="WAPRO ERP by Asseco" /></td>
-                    <td width="400" style="width:400px;">
-                      <table>
-                        <tr>
-                          <td width="360" align="right" style="width:360px; text-align:right; font-family:arial; font-size:14px; color:#000; text-decoration:none;">
-                            <a style="font-family:arial; font-size:14px; color:#000; text-decoration:none;" href="http://www.wapro.pl">WAPRO ERP</a> 
-                          </td>
-                          <td width="40" style="width:40px;"></td>
-                        </tr>
-                      </table>
-                    </td>
-                  </tr>
-                </table>
-              </td>
-            </tr>
-            <tr width="600" style="width:600px;">
-              <td colspan="3"><img BORDER="0" style="display:block; padding:0; margin:0;" src="http://www.assecobs.pl/storage/mail/stat/header-line.png" alt="" title="" /></td>
-            </tr>
-            <tr width="600" style="width:600px;">
-              <td width="40" style="width:40px;"></td>
-              <td width="520" style="width:580px;">
-                        
-      
-      <h2 style="font-family:Arial, Helvetica, Verdana, sans-serif;"> Szanowni Państwo! </h2>
-      
-      <p style="font-size:12px; text-align:justify; font-family:Arial, Helvetica, Verdana, sans-serif;">
-      Test!!!
-      </p>
-                <table border="0" cellspacing="0" cellpadding="0">
-                  <tr>
-                    <td style="height: 118px">
-                      <strong style="font-family:arial; font-size:14px;">
-                      <br>
-                      Pozdrawiamy</strong><br />
-                      <span style="font-family:arial; color:#da0d14; font-size:14px;">Zespół WAPRO ERP</span>
-      
-                      <p style="font-family:arial; font-size:14px;margin-bottom:20px;">
-                        Asseco Business Solutions S.A.<br />
-                        Oddział w Warszawie<br />
-                        ul. Adama Branickiego 13<br />
-                        <a style="font-family:arial; color:#da0d14; font-size:14px; text-decoration:underline;" href="http://wapro.pl">wapro.pl</a>
-      
-                      </p>
-                    </td>
-                  </tr>
-                </table>
-              </td>
-              <td width="40" style="width:40px;"></td>
-            </tr>
-          </tbody>
-        </table>
-      </body>';
-
-      wp_mail($to, $subject, $message, $headers);
     }
   }
 }
