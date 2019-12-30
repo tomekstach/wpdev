@@ -93,7 +93,9 @@ jQuery(document).ready(function($) {
           email: $('#input-email').val(),
           firstname: $('#input-imie').val(),
           lastname: $('#input-nazwisko').val(),
-          phone: $('#input-tel').val()
+          phone: $('#input-tel').val(),
+          rodoRodaj: $('#rodo-rodzaj').val(),
+          umowaPodpisana: $('#umowa-podpisana').val()
         },
         beforeSend: function(xhr) {
           xhr.setRequestHeader('X-WP-Nonce', UmowaSerwisowaSettings.nonce);

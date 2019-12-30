@@ -44,6 +44,8 @@ function wl_add_contract()
   $firstname    = addslashes(stripslashes(strip_tags($_POST['firstname'])));
   $lastname     = addslashes(stripslashes(strip_tags($_POST['lastname'])));
   $phone        = addslashes(stripslashes(strip_tags($_POST['phone'])));
+  $rodoRodaj    = addslashes(stripslashes(strip_tags($_POST['rodoRodaj'])));
+  $umowaPodpisana = intval($_POST['umowaPodpisana']);
   $date         = date('Y-m-d H:i:s');
   $date_end     = date('Y-m-d', strtotime("+7 day", time()));
 
@@ -159,6 +161,85 @@ function wl_add_contract()
   wp_mail($to, $subject, $message, $headers);
   $to = 'Agnieszka.Palyz@assecobs.pl';
   wp_mail($to, $subject, $message, $headers);
+
+  if ($umowaPodpisana === 0) {
+    $to = $email;
+    $subject = 'Potwierdzenie zawarcia umowy przetwarzania danych osobowych';
+    $attachments = array(WP_CONTENT_DIR . '/uploads/2019/10/Umowa_powierzenia_przetwarzania_danych_osobowych.pdf');
+    $message = '<body bgcolor="#f7f5f5" style="background-color:#f7f5f5;">
+        <table border="0" cellspacing="0" cellpadding="0" align="center" width="600" bgcolor="#fff" style="width:600px; background-color:#fff;">
+          <tbody width="600" style="width:600px;">
+            <tr width="600" style="width:600px;">
+              <td colspan="3">
+                <table>
+                  <tr>
+                    <td width="200" style="width:200px;"><img BORDER="0" style="display:block; padding:0; margin:0;" src="http://www.assecobs.pl/storage/mail/stat/logo.png" alt="WAPRO ERP by Asseco" title="WAPRO ERP by Asseco" /></td>
+                    <td width="400" style="width:400px;">
+                      <table>
+                        <tr>
+                          <td width="360" align="right" style="width:360px; text-align:right; font-family:arial; font-size:14px; color:#000; text-decoration:none;">
+                            <a style="font-family:arial; font-size:14px; color:#000; text-decoration:none;" href="http://www.wapro.pl">WAPRO ERP</a> 
+                          </td>
+                          <td width="40" style="width:40px;"></td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+            <tr width="600" style="width:600px;">
+              <td colspan="3"><img BORDER="0" style="display:block; padding:0; margin:0;" src="http://www.assecobs.pl/storage/mail/stat/header-line.png" alt="" title="" /></td>
+            </tr>
+            <tr width="600" style="width:600px;">
+              <td width="40" style="width:40px;"></td>
+              <td width="520" style="width:580px;">
+                        
+      
+      <h2 style="font-family:Arial, Helvetica, Verdana, sans-serif;"> Szanowni Państwo! </h2>
+      
+      <p style="font-size:12px; text-align:justify; font-family:Arial, Helvetica, Verdana, sans-serif;">
+      Potwierdzamy zawarcie z nami umowy powierzenia przetwarzania danych osobowych w treści jak w załączeniu, przy czym: 
+      <br><br>
+      Osoba zawierająca umowę: ' . $firstname . ' ' . $lastname . ' (' . $rodoRodaj . ') 
+      <br><br>
+      Data zawarcia: ' . $date . ' 
+      <br><br>
+      Adres e-mail do zgłaszania naruszeń: ' . $email . ' 
+      <br><br>
+      Zakres obowiązywania umowy: uruchomienie lub testowanie programu na danych rzeczywistych 
+      <br><br>
+      Umowa została zawarta zdalnie przez kliknięcie w przycisk i akceptację danych w formularzu przystąpienia do umowy. 
+      <br><br>
+      Przypominamy, że nie jest wymagane drukowanie i przesyłanie papierowego egzemplarza podpisanej umowy.
+      </p>
+                <table border="0" cellspacing="0" cellpadding="0">
+                  <tr>
+                    <td style="height: 118px">
+                      <strong style="font-family:arial; font-size:14px;">
+                      <br>
+                      Pozdrawiamy</strong><br />
+                      <span style="font-family:arial; color:#da0d14; font-size:14px;">Zespół WAPRO ERP</span>
+      
+                      <p style="font-family:arial; font-size:14px;margin-bottom:20px;">
+                        Asseco Business Solutions S.A.<br />
+                        Oddział w Warszawie<br />
+                        ul. Adama Branickiego 13<br />
+                        <a style="font-family:arial; color:#da0d14; font-size:14px; text-decoration:underline;" href="http://wapro.pl">wapro.pl</a>
+      
+                      </p>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+              <td width="40" style="width:40px;"></td>
+            </tr>
+          </tbody>
+        </table>
+      </body>';
+
+    wp_mail($to, $subject, $message, $headers, $attachments);
+  }
 
   return $new_post_id;
 }
