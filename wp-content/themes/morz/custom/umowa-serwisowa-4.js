@@ -26,6 +26,6 @@ jQuery(document).ready(function($) {
 
   document.addEventListener('wpcf7mailsent', function(event) {
     //console.log('mailsent!!!');
-    location.href = wpcf7_redirect_forms[47037].external_url + '?contract=' + $("#umowa_id").val() + '&new=982y547syrth94w8j0826';
+    location.href = wpcf7_redirect_forms[47037].external_url + '?contract=' + $("#umowa_id").val() + '&new=982y547syrth94w8j0826#nowa-umowa';
   });
 });

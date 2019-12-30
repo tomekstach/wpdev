@@ -50,6 +50,8 @@ jQuery(document).ready(function($) {
 
   wpcf7Elm.addEventListener('wpcf7submit', function(event) {
 
+    $("#nowa-umowa").hide();
+
     if (contract != '') {
       $.ajax({
         type: "POST",
