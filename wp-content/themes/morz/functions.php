@@ -1177,6 +1177,8 @@ function after_sent_mail($cf7)
       <br><br>
       Adres e-mail do zgłaszania naruszeń: ' . $data['rodo-e-mail'] . ' 
       <br><br>
+      Zakres obowiązywania umowy: Hosting
+      <br><br>
       Umowa została zawarta zdalnie przez kliknięcie w przycisk i akceptację danych w formularzu przystąpienia do umowy. 
       <br><br>
       Przypominamy, że nie jest wymagane drukowanie i przesyłanie papierowego egzemplarza podpisanej umowy.
