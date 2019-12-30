@@ -27,6 +27,12 @@ if (array_key_exists('redirect_to', $_GET)) {
   $redirect_url         = $_GET['redirect_to'];
   $logout_redirect_url  = $_GET['redirect_to'];
 }
+
+if ($logout_redirect_url) {
+  $logout_redirect_url = '&redirect_to=' . $logout_redirect_url;
+} else {
+  $logout_redirect_url = '';
+}
 ?>
 <div class="pp-login-form-wrap">
   <?php if (isset($customError)) : ?>
@@ -39,10 +45,10 @@ if (array_key_exists('redirect_to', $_GET)) {
       $current_user = wp_get_current_user(); ?>
   <div class="pp-login-message">
     <?php
-            // translators: Here %1$s is for current user's display name and %2$s is for logout URL.
-            $msg = sprintf(__('Jesteś zalogowany(a) jako %1$s (<a href="%2$s">Wyloguj</a>)', 'bb-powerpack'), $current_user->display_name, explode('_wpnonce', (site_url('logowanie/?customAction=logout', 'logout')))[0]);
-            echo apply_filters('pp_login_form_logged_in_message', $msg, $current_user->display_name, site_url('logowanie/?customAction=logout', 'logout'));
-            ?>
+        // translators: Here %1$s is for current user's display name and %2$s is for logout URL.
+        $msg = sprintf(__('Jesteś zalogowany(a) jako %1$s (<a href="%2$s">Wyloguj</a>)', 'bb-powerpack'), $current_user->display_name, explode('_wpnonce', (site_url('logowanie/?customAction=logout' . $logout_redirect_url, 'logout')))[0]);
+        echo apply_filters('pp_login_form_logged_in_message', $msg, $current_user->display_name, site_url('logowanie/?customAction=logout' . $logout_redirect_url, 'logout'));
+        ?>
   </div>
   <?php if (!$show_label) : ?>
   <a class="button" href="<?php echo $redirect_url; ?>">Przejdź do głównej strony</a>
