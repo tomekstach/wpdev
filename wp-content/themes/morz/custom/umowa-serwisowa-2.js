@@ -5,6 +5,11 @@ jQuery(document).ready(function($) {
     $("#loader-content").show();
     $("#rodo-content").hide();
 
+    // Remove all characters which are not digits
+    var nipVal = $('#input-nip').val();
+    $('#input-nip').val(nipVal.replace(/[^0-9]/g, ""));
+    console.log("NIP: " + $('#input-nip').val());
+
     if ($('#input-nip').val() != '') {
       console.log('Check RODO contract!');
 

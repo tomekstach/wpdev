@@ -166,19 +166,19 @@ p.pp-cf7-form-description,
 }
 
 #main aside.right .nastepny-krok-1 {
-  padding: 50px 25px 30px 25px;
+  padding: 20px 20px 10px 20px;
   background: #f5f6f7;
   position: relative;
 }
 
 #main aside.right .nastepny-krok-2 {
-  padding: 50px 25px 30px 25px;
+  padding: 20px 20px 10px 20px;
   background: #e5e6e7;
   position: relative;
 }
 
 #main aside.right .nastepny-krok-3 {
-  padding: 50px 25px 30px 25px;
+  padding: 20px 20px 10px 20px;
   background: #d9dadb;
   position: relative;
 }
@@ -190,8 +190,12 @@ p.pp-cf7-form-description,
 
 #main aside.right h5 {
   font-family: 'geomanist medium';
-  font-size: 16px;
+  font-size: 14px;
   margin-bottom: 15px;
+}
+
+#main aside.right p {
+  font-size: 12px;
 }
 
 #main aside.right .nastepny-icon {
@@ -266,11 +270,16 @@ p.pp-cf7-form-description,
   vertical-align: middle;
 }
 
-#main .pp-notification-wrapper .pp-notification-inner .pp-notification-content p {
+#main .pp-notification-wrapper .pp-notification-inner .pp-notification-content p,
+#main .pp-notification-wrapper .pp-notification-inner .pp-notification-content a {
   margin-bottom: 0;
   font-size: 16px;
   line-height: 1.6;
-  color: #3ca9d1;
+  color: #3ca9d1 !important;
+}
+
+#main .pp-notification-wrapper .pp-notification-inner .pp-notification-content a:hover {
+  border-color: #3ca9d1;
 }
 
 #main #nowa-umowa.pp-notification-wrapper {
@@ -280,7 +289,7 @@ p.pp-cf7-form-description,
 
 #main #nowa-umowa.pp-notification-wrapper .pp-notification-inner .pp-notification-icon span.pp-icon,
 #main #nowa-umowa.pp-notification-wrapper .pp-notification-inner .pp-notification-content p {
-  color: #3c763d;
+  color: #3c763d !important;
 }
 
 #main .wpcf7-response-output {
