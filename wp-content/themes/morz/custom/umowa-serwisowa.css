@@ -37,22 +37,34 @@ p.pp-cf7-form-description,
   margin: 0;
 }
 
+#main .container-multistep-header ul.cf7-display-steps-container {
+  align-items: center;
+  justify-content: center;
+}
+
 #main .container-multistep-header ul li {
+  display: flex;
   height: 150px;
   border-right: 1px solid #fff;
   position: relative;
-  padding: 20px 40px 0 40px !important;
-  text-transform: uppercase;
   margin: 0;
   background: transparent;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+}
+
+#main .container-multistep-header ul li b {
+  font-family: 'geomanist medium';
 }
 
 #main .container-multistep-header ul li:first-child {
   border-left: 1px solid #fff;
 }
 
-#main .container-multistep-header ul li.active {
-  background: #c50a1f;
+#main .container-multistep-header ul li.active,
+#main .container-multistep-header ul li.enabled {
+  background: #d42027 !important;
 }
 
 #main .container-multistep-header ul li.active::after {
@@ -62,7 +74,7 @@ p.pp-cf7-form-description,
   height: 0;
   border-left: 20px solid transparent !important;
   border-right: 20px solid transparent;
-  border-top: 20px solid #c50a1f;
+  border-top: 20px solid #d42027;
   position: absolute;
   bottom: -20px;
   background: transparent;
@@ -89,7 +101,7 @@ p.pp-cf7-form-description,
   font-size: 110px;
   line-height: 130px;
   width: 25%;
-  color: #c50a1f;
+  color: #d42027;
   text-align: center;
 }
 
@@ -144,10 +156,6 @@ p.pp-cf7-form-description,
 
 #main .page-wrapper.umowa.solo article {
   background: transparent;
-}
-
-#main .wpcf7-form h3 {
-  font-size:
 }
 
 #main .wpcf7-form .cf7-underline {
