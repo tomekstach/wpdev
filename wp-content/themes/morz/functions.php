@@ -611,7 +611,7 @@ add_filter('wpcf7_validate_text*', 'custom_archive_text_validation_filter', 20, 
 
 function custom_archive_text_validation_filter($result, $tag)
 {
-  if ($tag->name == 'your-nip-register' or $tag->name == 'NIP') {
+  if ($tag->name == 'your-nip-register' or $tag->name == 'NIP' or $tag->name == 'yl-nip') {
     require_once 'custom/NIP24/NIP24Client.php';
 
     \NIP24\NIP24Client::registerAutoloader();
@@ -619,11 +619,7 @@ function custom_archive_text_validation_filter($result, $tag)
     $nip24 = new \NIP24\NIP24Client('wRocgSXQIItj', '2PEXnwYwCwVA');
 
     //$nip = '7171642051';
-    if ($tag->name == 'your-nip-register') {
-      $nip = preg_replace('/\s+/', '', str_replace('-', '', strip_tags($_POST['your-nip-register'])));
-    } else {
-      $nip = preg_replace('/\s+/', '', str_replace('-', '', strip_tags($_POST['NIP'])));
-    }
+    $nip = preg_replace('/\s+/', '', str_replace('-', '', strip_tags($_POST[$tag->name])));
     $nip_eu = 'PL' . $nip;
 
     // Sprawdzenie stanu konta
@@ -763,6 +759,44 @@ function custom_archive_checkbox_validation_filter($result, $tag)
       !isset($_POST['dl-produkty-wdrozenie']) &&
       !isset($_POST['dl-produkty-serwis']) &&
       !isset($_POST['dl-produkty-szkolenie'])
+    ) {
+      $result->invalidate($tag, 'Proszę wybrać przynajmniej jedną opcję!');
+    }
+  }
+
+  if (
+    $tag->name == 'demo-checkbox-mag' ||
+    $tag->name == 'demo-checkbox-fakir' ||
+    $tag->name == 'demo-checkbox-kaper' ||
+    $tag->name == 'demo-checkbox-gang' ||
+    $tag->name == 'demo-checkbox-best' ||
+    $tag->name == 'demo-checkbox-fakturka' ||
+    $tag->name == 'demo-checkbox-aukcje' ||
+    $tag->name == 'demo-checkbox-mobile' ||
+    $tag->name == 'demo-checkbox-analizy' ||
+    $tag->name == 'demo-checkbox-ibusiness' ||
+    $tag->name == 'demo-checkbox-b2c' ||
+    $tag->name == 'demo-checkbox-b2b' ||
+    $tag->name == 'demo-checkbox-br-online' ||
+    $tag->name == 'demo-checkbox-jpk' ||
+    $tag->name == 'demo-checkbox-ppk'
+  ) {
+    if (
+      !isset($_POST['demo-checkbox-mag']) &&
+      !isset($_POST['demo-checkbox-fakir']) &&
+      !isset($_POST['demo-checkbox-kaper']) &&
+      !isset($_POST['demo-checkbox-gang']) &&
+      !isset($_POST['demo-checkbox-best']) &&
+      !isset($_POST['demo-checkbox-fakturka']) &&
+      !isset($_POST['demo-checkbox-aukcje']) &&
+      !isset($_POST['demo-checkbox-mobile']) &&
+      !isset($_POST['demo-checkbox-analizy']) &&
+      !isset($_POST['demo-checkbox-ibusiness']) &&
+      !isset($_POST['demo-checkbox-b2c']) &&
+      !isset($_POST['demo-checkbox-b2b']) &&
+      !isset($_POST['demo-checkbox-br-online']) &&
+      !isset($_POST['demo-checkbox-jpk']) &&
+      !isset($_POST['demo-checkbox-ppk'])
     ) {
       $result->invalidate($tag, 'Proszę wybrać przynajmniej jedną opcję!');
     }
