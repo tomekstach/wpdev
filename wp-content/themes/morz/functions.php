@@ -60,6 +60,7 @@ if (class_exists('Vamtam_Importers') && is_callable(array('Vamtam_Importers', 's
   Vamtam_Importers::set_menu_locations();
 }
 
+// AstoSoft - start
 function post_title_shortcode()
 {
   return get_the_title();

@@ -21,6 +21,7 @@ if ($page_title != '' && in_array('subscriber', $user->roles)) {
 get_header();
 
 VamtamEnqueues::enqueue_style_and_print('vamtam-not-found');
+
 ?>
 
 <div class="clearfix">

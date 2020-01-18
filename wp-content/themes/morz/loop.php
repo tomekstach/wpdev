@@ -87,7 +87,7 @@ if ($is_cube) {
 <div class="loop-wrapper clearfix <?php echo esc_attr(implode(' ', $wrapper_class)) ?>"
   data-columns="<?php echo esc_attr($settings->columns) ?>"
   <?php echo $data_options_escaped // xss ok 
-                                                                                                                                                        ?>>
+                                                                                                                                                  ?>>
   <?php
 
   do_action('vamtam_before_main_loop');
@@ -124,7 +124,7 @@ if ($is_cube) {
       }
 
       $starting_width = 100 / $settings->columns;
-      ?>
+  ?>
   <div <?php post_class(implode(' ', $post_class)) ?> style="width: <?php echo esc_attr($starting_width) ?>%">
     <div>
       <?php include locate_template('templates/post.php');  ?>
